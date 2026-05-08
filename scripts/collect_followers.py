@@ -1,9 +1,11 @@
 import os, csv, datetime
 import tweepy
 
+USERNAME = "あなたのXユーザー名"  # @は不要。例: "elonmusk"
+
 client = tweepy.Client(bearer_token=os.environ["X_BEARER_TOKEN"])
-me = client.get_me(user_fields=["public_metrics"])
-m = me.data.public_metrics
+user = client.get_user(username=USERNAME, user_fields=["public_metrics"])
+m = user.data.public_metrics
 
 today = datetime.date.today().isoformat()
 os.makedirs("data", exist_ok=True)
