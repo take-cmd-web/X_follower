@@ -1,7 +1,7 @@
 import os, csv, datetime
 import tweepy
 
-USERNAME = "あなたのXユーザー名"  # @は不要。例: "elonmusk"
+USERNAME = "nshima_finance"  # @は不要。例: "elonmusk"
 
 client = tweepy.Client(bearer_token=os.environ["X_BEARER_TOKEN"])
 user = client.get_user(username=USERNAME, user_fields=["public_metrics"])
