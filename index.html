@@ -14,7 +14,7 @@
     --border: #222222;
     --border2: #2e2e2e;
     --text: #e8e8e8;
-    --muted: #666666;
+    --muted: #aaaaaa;
     --dim: #333333;
     --accent: #1d9bf0;
     --accent2: #0f6e9e;
@@ -346,6 +346,13 @@
     <div class="chart-wrap"><canvas id="followerChart" role="img" aria-label="フォロワー推移グラフ"></canvas></div>
   </div>
 
+  <!-- ── フォロワー日次変化 ── -->
+  <div class="chart-card">
+    <div class="chart-title">フォロワー日次変化</div>
+    <div class="chart-sub">日次増減 + 7日移動平均</div>
+    <div class="chart-wrap" style="height:200px"><canvas id="followerDeltaChart" role="img" aria-label="フォロワー日次変化"></canvas></div>
+  </div>
+
   <!-- ── 日次インプレッション・いいね ── -->
   <div class="two-col">
     <div class="chart-card">
@@ -412,7 +419,7 @@ const RAW  = `https://raw.githubusercontent.com/${REPO}/main/data`;
 let allFollowers = [];
 let allOverview  = [];
 let allTweets    = [];
-let followerChart, impChart, engChart, dowChart;
+let followerChart, followerDeltaChart, impChart, engChart, dowChart;
 let currentSort  = 'created_at';
 
 // ── CSV パーサー（複数行フィールド対応） ─────────────────
@@ -551,6 +558,70 @@ function drawFollowerChart() {
   });
 }
 
+// ── フォロワー日次変化チャート ───────────────────────────
+function drawFollowerDeltaChart() {
+  const sorted = [...allFollowers].filter(r => r.followers).sort((a,b) => a.date.localeCompare(b.date));
+  if (sorted.length < 2) return;
+
+  const labels = [], deltas = [], ma7 = [];
+  for (let i = 1; i < sorted.length; i++) {
+    const d = Number(sorted[i].followers) - Number(sorted[i-1].followers);
+    labels.push(sorted[i].date.slice(5));
+    deltas.push(d);
+  }
+  // 7日移動平均
+  for (let i = 0; i < deltas.length; i++) {
+    const start = Math.max(0, i - 6);
+    const slice = deltas.slice(start, i + 1);
+    ma7.push(Math.round(slice.reduce((a,b) => a+b, 0) / slice.length * 10) / 10);
+  }
+
+  const colors = deltas.map(v => v >= 0 ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)');
+
+  if (followerDeltaChart) followerDeltaChart.destroy();
+  followerDeltaChart = new Chart(document.getElementById('followerDeltaChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'bar',
+          label: '日次増減',
+          data: deltas,
+          backgroundColor: colors,
+          borderWidth: 0,
+          order: 2,
+        },
+        {
+          type: 'line',
+          label: '7日移動平均',
+          data: ma7,
+          borderColor: '#f59e0b',
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.4,
+          order: 1,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.label + ': ' + (ctx.parsed.y >= 0 ? '+' : '') + ctx.parsed.y
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 10, maxRotation: 0 }, grid: { display: false } },
+        y: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a1a' } }
+      }
+    }
+  });
+}
+
 // ── 日次インプレッションチャート ──────────────────────────
 function drawImpChart() {
   const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-30);
@@ -667,7 +738,7 @@ function renderTweetTable() {
     const tweetUrl = `https://x.com/nshima_finance/status/${r.tweet_id}`;
 
     return `<tr>
-      <td class="num" style="color:var(--muted)">${i+1}</td>
+      <td class="num" style="color:var(--text)">${i+1}</td>
       <td>
         <a href="${tweetUrl}" target="_blank" style="text-decoration:none">
           <div class="tweet-text">${escHtml(text)}</div>
@@ -743,6 +814,7 @@ async function main() {
     // 描画
     renderMetrics();
     drawFollowerChart();
+    drawFollowerDeltaChart();
     drawImpChart();
     drawEngChart();
     drawDowChart();
