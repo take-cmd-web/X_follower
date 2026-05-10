@@ -516,6 +516,7 @@ function setFollowerRange(range, btn) {
   btn.classList.add('active');
   followerDays = range === 'all' ? 9999 : parseInt(range);
   drawFollowerChart();
+  drawFollowerDeltaChart();
 }
 
 function drawFollowerChart() {
@@ -560,7 +561,10 @@ function drawFollowerChart() {
 
 // ── フォロワー日次変化チャート ───────────────────────────
 function drawFollowerDeltaChart() {
-  const sorted = [...allFollowers].filter(r => r.followers).sort((a,b) => a.date.localeCompare(b.date));
+  const all = [...allFollowers].filter(r => r.followers).sort((a,b) => a.date.localeCompare(b.date));
+  if (all.length < 2) return;
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - followerDays);
+  const sorted = followerDays >= 9999 ? all : all.filter(r => new Date(r.date) >= cutoff);
   if (sorted.length < 2) return;
 
   const labels = [], deltas = [], ma7 = [];
