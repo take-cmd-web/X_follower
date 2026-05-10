@@ -371,10 +371,10 @@
   <div class="section-label">投稿別パフォーマンス</div>
   <div class="sort-row">
     <span class="sort-label">sort by</span>
-    <button class="tab active" onclick="sortTweets('impressions',this)">インプレッション</button>
+    <button class="tab active" onclick="sortTweets('created_at',this)">新着順</button>
+    <button class="tab" onclick="sortTweets('impressions',this)">インプレッション</button>
     <button class="tab" onclick="sortTweets('likes',this)">いいね</button>
     <button class="tab" onclick="sortTweets('eng_rate',this)">エンゲージ率</button>
-    <button class="tab" onclick="sortTweets('created_at',this)">新着順</button>
   </div>
   <div class="chart-card" style="padding:0; overflow:auto">
     <table class="tweet-table" id="tweet-table">
@@ -413,21 +413,31 @@ let allFollowers = [];
 let allOverview  = [];
 let allTweets    = [];
 let followerChart, impChart, engChart, dowChart;
-let currentSort  = 'impressions';
+let currentSort  = 'created_at';
 
-// ── CSV パーサー ──────────────────────────────────────────
+// ── CSV パーサー（複数行フィールド対応） ─────────────────
 function parseCSV(text) {
-  const lines = text.trim().split('\n');
-  const headers = lines[0].split(',').map(h => h.replace(/\\/g,'').trim().replace(/^"|"$/g,''));
-  return lines.slice(1).map(line => {
-    const vals = [];
-    let cur = '', inQ = false;
-    for (const c of line) {
-      if (c === '"') { inQ = !inQ; }
-      else if (c === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
-      else cur += c;
+  const src = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const rows = [];
+  let cur = '', inQ = false, fields = [];
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (c === '"') {
+      if (inQ && src[i+1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (c === ',' && !inQ) {
+      fields.push(cur); cur = '';
+    } else if (c === '\n' && !inQ) {
+      fields.push(cur); cur = '';
+      if (fields.some(f => f.trim())) rows.push(fields);
+      fields = [];
+    } else {
+      cur += c;
     }
-    vals.push(cur.trim());
+  }
+  if (cur || fields.length) { fields.push(cur); if (fields.some(f => f.trim())) rows.push(fields); }
+  const headers = rows[0].map(h => h.replace(/\\/g,'').trim().replace(/^"|"$/g,''));
+  return rows.slice(1).filter(r => r.length > 1).map(vals => {
     const obj = {};
     headers.forEach((h, i) => obj[h] = (vals[i] || '').replace(/^"|"$/g,'').trim());
     return obj;
@@ -534,8 +544,8 @@ function drawFollowerChart() {
         callbacks: { label: ctx => `${fmtFull(ctx.parsed.y)} followers` }
       }},
       scales: {
-        x: { ticks: { color: '#555', font: { family: 'JetBrains Mono', size: 10 }, maxTicksLimit: 8, maxRotation: 0 }, grid: { color: '#1a1a1a' } },
-        y: { ticks: { color: '#555', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a1a' } }
+        x: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 10 }, maxTicksLimit: 8, maxRotation: 0 }, grid: { color: '#1a1a1a' } },
+        y: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a1a' } }
       }
     }
   });
@@ -559,8 +569,8 @@ function drawImpChart() {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { color: '#555', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 6, maxRotation: 0 }, grid: { display: false } },
-        y: { ticks: { color: '#555', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a1a' } }
+        x: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 6, maxRotation: 0 }, grid: { display: false } },
+        y: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a1a' } }
       }
     }
   });
@@ -588,8 +598,8 @@ function drawEngChart() {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { color: '#555', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 6, maxRotation: 0 }, grid: { display: false } },
-        y: { ticks: { color: '#555', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a1a' } }
+        x: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 6, maxRotation: 0 }, grid: { display: false } },
+        y: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a1a' } }
       }
     }
   });
@@ -622,8 +632,8 @@ function drawDowChart() {
         callbacks: { label: ctx => `平均 ${fmtFull(ctx.parsed.y)} imp` }
       }},
       scales: {
-        x: { ticks: { color: '#888', font: { family: 'JetBrains Mono', size: 12 } }, grid: { display: false } },
-        y: { ticks: { color: '#555', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a1a' } }
+        x: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 12 } }, grid: { display: false } },
+        y: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a1a' } }
       }
     }
   });
