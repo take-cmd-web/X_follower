@@ -2,8 +2,9 @@ name: Track followers
 
 on:
   schedule:
-    - cron: "0 4 * * *"
-  workflow_dispatch:
+    - cron: "0 1 * * *"    # UTC 01:00 = JST 10:00
+    - cron: "0 9 * * *"    # UTC 09:00 = JST 18:00
+  workflow_dispatch:        # 手動実行も可能
 
 permissions:
   contents: write
