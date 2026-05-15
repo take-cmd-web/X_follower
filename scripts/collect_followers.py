@@ -10,14 +10,31 @@ m = user.data.public_metrics
 today = datetime.date.today().isoformat()
 os.makedirs("data", exist_ok=True)
 
-# ── フォロワー記録（既存のまま） ──────────────────────────
+# ── フォロワー記録（今日の行は上書き・1日1データ） ────────
 path = "data/followers.csv"
-new_file = not os.path.exists(path)
-with open(path, "a", newline="") as f:
-    w = csv.writer(f)
-    if new_file:
-        w.writerow(["date", "followers", "following", "tweets"])
-    w.writerow([today, m["followers_count"], m["following_count"], m["tweet_count"]])
+fieldnames = ["date", "followers", "following", "tweets"]
+
+# 既存データを読み込む
+existing = {}
+if os.path.exists(path):
+    with open(path, newline="") as f:
+        for row in csv.DictReader(f):
+            existing[row["date"]] = row
+
+# 今日の行を上書き（朝10時→夕方18時で最新値に更新）
+existing[today] = {
+    "date":      today,
+    "followers": m["followers_count"],
+    "following": m["following_count"],
+    "tweets":    m["tweet_count"],
+}
+
+# 日付順に書き直し
+with open(path, "w", newline="") as f:
+    w = csv.DictWriter(f, fieldnames=fieldnames)
+    w.writeheader()
+    for row in sorted(existing.values(), key=lambda r: r["date"]):
+        w.writerow(row)
 print(f"Recorded: {today} followers={m['followers_count']}")
 
 # ── ツイート取得（拡張版） ────────────────────────────────
