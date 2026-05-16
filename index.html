@@ -370,7 +370,7 @@
   <!-- ── 曜日別平均インプレッション ── -->
   <div class="chart-card">
     <div class="chart-title">曜日別 平均インプレッション</div>
-    <div class="chart-sub">全期間平均（投稿効果の高い曜日を把握）</div>
+    <div class="chart-sub">前日までの過去8週間平均（投稿効果の高い曜日を把握）</div>
     <div class="chart-wrap" style="height:180px"><canvas id="dowChart" role="img" aria-label="曜日別平均インプレッション"></canvas></div>
   </div>
 
@@ -689,9 +689,17 @@ function drawDowChart() {
   const DOW = ['日','月','火','水','木','金','土'];
   const sums = [0,0,0,0,0,0,0];
   const cnts = [0,0,0,0,0,0,0];
-  for (const r of allOverview) {
-    const d = new Date(r._date).getDay();
-    sums[d] += Number(r['インプレッション数'])||0;
+  // 前日までの過去8週間（56日）のtweets.csvから集計
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const cutoff56 = new Date(today); cutoff56.setDate(today.getDate()-56);
+  const recent = allTweets.filter(r => {
+    const d = new Date(r.created_at);
+    return d >= cutoff56 && d < today;
+  });
+  for (const r of recent) {
+    const d = new Date(r.created_at).getDay();
+    sums[d] += Number(r.impressions)||0;
     cnts[d]++;
   }
   const avgs = sums.map((s,i) => cnts[i] > 0 ? Math.round(s/cnts[i]) : 0);
