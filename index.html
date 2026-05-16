@@ -473,22 +473,26 @@ function renderMetrics() {
   const prevF = Number(latestF[1]?.followers) || followers;
   const fDelta = followers - prevF;
 
-  // 直近30日のoverview集計
-  const cutoff30 = new Date(); cutoff30.setDate(cutoff30.getDate()-30);
-  const recent30 = allOverview.filter(r => new Date(r._date) >= cutoff30);
-  const totalImp30 = recent30.reduce((s,r) => s + (Number(r['インプレッション数'])||0), 0);
-  const totalLike30 = recent30.reduce((s,r) => s + (Number(r['いいね'])||0), 0);
-  const totalNewF30 = recent30.reduce((s,r) => s + (Number(r['新しいフォロー'])||0), 0);
+  // tweets.csvから直近7日・30日のIMP・いいねを集計（自動更新ベース）
+  const now = new Date();
+  const cutoff7  = new Date(now); cutoff7.setDate(now.getDate()-7);
+  const cutoff30 = new Date(now); cutoff30.setDate(now.getDate()-30);
+  const cutoff14 = new Date(now); cutoff14.setDate(now.getDate()-14);
 
-  // 直近7日
-  const cutoff7 = new Date(); cutoff7.setDate(cutoff7.getDate()-7);
-  const recent7 = allOverview.filter(r => new Date(r._date) >= cutoff7);
-  const totalImp7 = recent7.reduce((s,r) => s + (Number(r['インプレッション数'])||0), 0);
+  const tweets7  = allTweets.filter(r => new Date(r.created_at) >= cutoff7);
+  const tweets30 = allTweets.filter(r => new Date(r.created_at) >= cutoff30);
+  const tweetsPrev7 = allTweets.filter(r => new Date(r.created_at) >= cutoff14 && new Date(r.created_at) < cutoff7);
 
-  const prev7start = new Date(); prev7start.setDate(prev7start.getDate()-14);
-  const prev7 = allOverview.filter(r => new Date(r._date) >= prev7start && new Date(r._date) < cutoff7);
-  const prevImp7 = prev7.reduce((s,r) => s + (Number(r['インプレッション数'])||0), 0);
+  const totalImp7   = tweets7.reduce((s,r)  => s + (Number(r.impressions)||0), 0);
+  const totalImp30  = tweets30.reduce((s,r) => s + (Number(r.impressions)||0), 0);
+  const prevImp7    = tweetsPrev7.reduce((s,r) => s + (Number(r.impressions)||0), 0);
+  const totalLike30 = tweets30.reduce((s,r) => s + (Number(r.likes)||0), 0);
   const impDeltaPct = prevImp7 > 0 ? Math.round((totalImp7 - prevImp7)/prevImp7*100) : 0;
+
+  // 新フォローはoverview（手動CSV）から
+  const cutoff30ov = new Date(now); cutoff30ov.setDate(now.getDate()-30);
+  const recent30ov = allOverview.filter(r => new Date(r._date) >= cutoff30ov);
+  const totalNewF30 = recent30ov.reduce((s,r) => s + (Number(r['新しいフォロー'])||0), 0);
 
   const cards = [
     { label: 'FOLLOWERS', value: fmtFull(followers), delta: fDelta >= 0 ? `+${fDelta} vs 前日` : `${fDelta} vs 前日`, up: fDelta >= 0 },
