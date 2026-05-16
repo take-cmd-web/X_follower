@@ -7,12 +7,15 @@ client = tweepy.Client(bearer_token=os.environ["X_BEARER_TOKEN"])
 user = client.get_user(username=USERNAME, user_fields=["public_metrics"])
 m = user.data.public_metrics
 
-today = datetime.date.today().isoformat()
+JST = datetime.timezone(datetime.timedelta(hours=9))
+now_jst = datetime.datetime.now(JST)
+today = now_jst.date().isoformat()
+now_str = now_jst.strftime("%Y-%m-%d %H:%M")  # JST日時文字列
 os.makedirs("data", exist_ok=True)
 
 # ── フォロワー記録（今日の行は上書き・1日1データ） ────────
 path = "data/followers.csv"
-fieldnames = ["date", "followers", "following", "tweets"]
+fieldnames = ["date", "followers", "following", "tweets", "updated_at"]
 
 # 既存データを読み込む
 existing = {}
@@ -23,10 +26,11 @@ if os.path.exists(path):
 
 # 今日の行を上書き（朝10時→夕方18時で最新値に更新）
 existing[today] = {
-    "date":      today,
-    "followers": m["followers_count"],
-    "following": m["following_count"],
-    "tweets":    m["tweet_count"],
+    "date":       today,
+    "followers":  m["followers_count"],
+    "following":  m["following_count"],
+    "tweets":     m["tweet_count"],
+    "updated_at": now_str,
 }
 
 # 日付順に書き直し
