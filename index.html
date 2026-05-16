@@ -541,9 +541,9 @@ function drawFollowerChart() {
       labels,
       datasets: [{
         data: values,
-        borderColor: '#1d9bf0',
-        backgroundColor: 'rgba(29,155,240,0.08)',
-        borderWidth: 1.5,
+        borderColor: 'rgba(29,155,240,0.6)',
+        backgroundColor: 'rgba(29,155,240,0.04)',
+        borderWidth: 1,
         pointRadius: data.length > 60 ? 0 : 3,
         pointHoverRadius: 5,
         fill: true,
@@ -556,8 +556,8 @@ function drawFollowerChart() {
         callbacks: { label: ctx => `${fmtFull(ctx.parsed.y)} followers` }
       }},
       scales: {
-        x: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 10 }, maxTicksLimit: 8, maxRotation: 0 }, grid: { color: '#1a1a1a' } },
-        y: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a1a' } }
+        x: { ticks: { color: '#999990', font: { family: 'JetBrains Mono', size: 10 }, maxTicksLimit: 8, maxRotation: 0 }, grid: { color: 'rgba(0,0,0,0.08)' } },
+        y: { ticks: { color: '#999990', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: 'rgba(0,0,0,0.08)' } }
       }
     }
   });
@@ -623,8 +623,8 @@ function drawFollowerDeltaChart() {
         }
       },
       scales: {
-        x: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 10, maxRotation: 0 }, grid: { display: false } },
-        y: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a1a' } }
+        x: { ticks: { color: '#999990', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 10, maxRotation: 0 }, grid: { display: false } },
+        y: { ticks: { color: '#999990', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: 'rgba(0,0,0,0.08)' } }
       }
     }
   });
@@ -648,8 +648,8 @@ function drawImpChart() {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 6, maxRotation: 0 }, grid: { display: false } },
-        y: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a1a' } }
+        x: { ticks: { color: '#999990', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 6, maxRotation: 0 }, grid: { display: false } },
+        y: { ticks: { color: '#999990', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: 'rgba(0,0,0,0.08)' } }
       }
     }
   });
@@ -677,8 +677,8 @@ function drawEngChart() {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 6, maxRotation: 0 }, grid: { display: false } },
-        y: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a1a' } }
+        x: { ticks: { color: '#999990', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 6, maxRotation: 0 }, grid: { display: false } },
+        y: { ticks: { color: '#999990', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: 'rgba(0,0,0,0.08)' } }
       }
     }
   });
@@ -711,8 +711,8 @@ function drawDowChart() {
         callbacks: { label: ctx => `平均 ${fmtFull(ctx.parsed.y)} imp` }
       }},
       scales: {
-        x: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 12 } }, grid: { display: false } },
-        y: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a1a' } }
+        x: { ticks: { color: '#999990', font: { family: 'JetBrains Mono', size: 12 } }, grid: { display: false } },
+        y: { ticks: { color: '#999990', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: 'rgba(0,0,0,0.08)' } }
       }
     }
   });
@@ -823,7 +823,9 @@ async function main() {
 
     // 更新日時（updated_at列があれば日時、なければ日付のみ）
     const latestRow = sortedF[sortedF.length-1];
-    const latestDateTime = latestRow?.updated_at || latestRow?.date || '—';
+    const latestDateTime = (latestRow?.updated_at && latestRow.updated_at.trim() !== '')
+      ? latestRow.updated_at
+      : latestRow?.date || '—';
     document.getElementById('updated-label').textContent = `更新: ${latestDateTime}`;
     document.getElementById('footer-updated').textContent = `last updated: ${latestDateTime} JST`;
 
