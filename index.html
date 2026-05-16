@@ -3,836 +3,598 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>X Analytics — @nshima_finance</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<title>Global Rates Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;600;700&display=swap');
+
   :root {
-    --bg: #0a0a0a;
-    --bg2: #111111;
-    --bg3: #1a1a1a;
-    --border: #222222;
-    --border2: #2e2e2e;
-    --text: #e8e8e8;
-    --muted: #aaaaaa;
-    --dim: #333333;
-    --accent: #1d9bf0;
-    --accent2: #0f6e9e;
-    --green: #22c55e;
-    --red: #ef4444;
-    --amber: #f59e0b;
-    --mono: 'JetBrains Mono', monospace;
-    --sans: 'Noto Sans JP', sans-serif;
+    --bg:        #0f0f13;
+    --surface:   #16161d;
+    --border:    #2a2a3a;
+    --text:      #e8e6f0;
+    --muted:     #7a7890;
+    --accent:    #f5a623;
+    --accent2:   #e05c5c;
+
+    /* Country palette */
+    --c-japan:   #e8534a;
+    --c-usa:     #4a8fe8;
+    --c-germany: #f0c040;
+    --c-uk:      #8b5cf6;
+    --c-aus:     #34d399;
+    --c-canada:  #f97316;
+    --c-swiss:   #ec4899;
   }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
+
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: var(--sans);
-    font-size: 14px;
-    line-height: 1.6;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 300;
     min-height: 100vh;
   }
 
-  /* ── header ── */
+  /* ── Header ── */
   header {
-    border-bottom: 1px solid var(--border);
-    padding: 20px 32px;
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
-    position: sticky;
-    top: 0;
-    background: rgba(10,10,10,0.92);
-    backdrop-filter: blur(12px);
-    z-index: 100;
+    padding: 28px 40px 0;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
   }
-  .header-left { display: flex; align-items: center; gap: 16px; }
   .logo {
-    font-family: var(--mono);
-    font-size: 13px;
-    font-weight: 700;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: .04em;
     color: var(--accent);
-    letter-spacing: 0.05em;
-    text-decoration: none;
   }
-  .header-tag {
-    font-family: var(--mono);
-    font-size: 11px;
+  .logo span { color: var(--text); font-weight: 300; }
+  #updated {
+    font-family: 'DM Mono', monospace;
+    font-size: .72rem;
     color: var(--muted);
-    border: 1px solid var(--border2);
-    padding: 2px 8px;
-    border-radius: 2px;
-  }
-  .live-dot {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--muted);
-  }
-  .live-dot::before {
-    content: '';
-    width: 6px; height: 6px;
-    background: var(--green);
-    border-radius: 50%;
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
   }
 
-  /* ── layout ── */
-  main { max-width: 1100px; margin: 0 auto; padding: 32px; }
-
-  /* ── section titles ── */
-  .section-label {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.15em;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 16px;
+  /* ── Controls ── */
+  .controls {
     display: flex;
-    align-items: center;
     gap: 12px;
+    align-items: center;
+    padding: 20px 40px;
+    flex-wrap: wrap;
   }
-  .section-label::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
-
-  /* ── metric cards ── */
-  .metric-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 1px;
-    background: var(--border);
+  .seg-group {
+    display: flex;
+    background: var(--surface);
     border: 1px solid var(--border);
-    margin-bottom: 32px;
-  }
-  .metric-card {
-    background: var(--bg2);
-    padding: 20px 24px;
-    position: relative;
+    border-radius: 8px;
     overflow: hidden;
   }
-  .metric-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: var(--accent);
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-  .metric-card:hover::before { opacity: 1; }
-  .metric-label {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.1em;
+  .seg-group button {
+    padding: 6px 16px;
+    background: transparent;
+    border: none;
     color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 8px;
+    font-family: 'Outfit', sans-serif;
+    font-size: .82rem;
+    cursor: pointer;
+    transition: all .15s;
   }
-  .metric-value {
-    font-family: var(--mono);
-    font-size: 28px;
-    font-weight: 700;
+  .seg-group button.active,
+  .seg-group button:hover {
+    background: var(--border);
     color: var(--text);
-    line-height: 1;
-    margin-bottom: 6px;
   }
-  .metric-delta {
-    font-family: var(--mono);
-    font-size: 11px;
+
+  .range-group {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+  .range-btn {
+    padding: 6px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    font-family: 'Outfit', sans-serif;
+    font-size: .8rem;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .range-btn.active, .range-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ── Country Toggles ── */
+  .country-toggles {
+    display: flex;
+    gap: 10px;
+    padding: 0 40px 20px;
+    flex-wrap: wrap;
+  }
+  .ctog {
     display: flex;
     align-items: center;
-    gap: 4px;
-  }
-  .delta-up { color: var(--green); }
-  .delta-down { color: var(--red); }
-  .delta-flat { color: var(--muted); }
-
-  /* ── chart containers ── */
-  .chart-card {
-    background: var(--bg2);
+    gap: 7px;
+    padding: 5px 13px;
+    background: var(--surface);
     border: 1px solid var(--border);
-    padding: 24px;
-    margin-bottom: 24px;
-  }
-  .chart-title {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text);
-    margin-bottom: 4px;
-    font-weight: 500;
-  }
-  .chart-sub {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--muted);
-    margin-bottom: 20px;
-  }
-  .chart-wrap { position: relative; width: 100%; height: 220px; }
-
-  /* ── filter tabs ── */
-  .tab-row {
-    display: flex;
-    gap: 2px;
-    margin-bottom: 20px;
-  }
-  .tab {
-    font-family: var(--mono);
-    font-size: 11px;
-    padding: 4px 12px;
-    border: 1px solid var(--border2);
-    background: transparent;
-    color: var(--muted);
+    border-radius: 20px;
     cursor: pointer;
-    transition: all 0.15s;
+    font-size: .8rem;
+    transition: all .15s;
+    user-select: none;
   }
-  .tab:hover { color: var(--text); border-color: var(--dim); }
-  .tab.active {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
+  .ctog .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+  .ctog.off { opacity: .35; }
+
+  /* ── Chart Area ── */
+  .chart-wrap {
+    padding: 0 40px 32px;
+    position: relative;
+  }
+  .chart-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 24px 16px;
+    position: relative;
+    height: 520px;
+  }
+  canvas { width: 100% !important; }
+
+  .chart-hint {
+    text-align: right;
+    font-size: .72rem;
+    color: var(--muted);
+    margin-top: 8px;
+    font-family: 'DM Mono', monospace;
   }
 
-  /* ── tweet table ── */
-  .tweet-table { width: 100%; border-collapse: collapse; }
-  .tweet-table th {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.1em;
+  /* ── Latest Values Table ── */
+  .table-wrap {
+    padding: 0 40px 48px;
+  }
+  .section-title {
+    font-size: .7rem;
+    letter-spacing: .12em;
     color: var(--muted);
     text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .85rem;
+  }
+  th {
     text-align: left;
-    padding: 8px 12px;
+    font-weight: 400;
+    color: var(--muted);
+    font-size: .75rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 8px 16px;
     border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: .83rem;
+  }
+  td.country-cell {
+    font-family: 'Outfit', sans-serif;
+    font-size: .88rem;
     font-weight: 400;
   }
-  .tweet-table td {
-    padding: 12px 12px;
-    border-bottom: 1px solid var(--border);
-    vertical-align: top;
-    font-size: 13px;
-  }
-  .tweet-table tr:hover td { background: var(--bg3); }
-  .tweet-text {
-    color: var(--text);
-    line-height: 1.5;
-    max-width: 380px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .tweet-date {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--muted);
-    white-space: nowrap;
-  }
-  .num {
-    font-family: var(--mono);
-    font-size: 13px;
-    text-align: right;
-    white-space: nowrap;
-  }
-  .bar-cell { min-width: 80px; }
-  .bar-bg {
-    background: var(--bg3);
-    height: 4px;
-    border-radius: 2px;
-    margin-top: 6px;
-  }
-  .bar-fill {
-    background: var(--accent);
-    height: 4px;
-    border-radius: 2px;
-    transition: width 0.6s ease;
-  }
-  .eng-badge {
-    font-family: var(--mono);
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 2px;
-    white-space: nowrap;
-  }
-  .eng-high { background: rgba(34,197,94,0.15); color: var(--green); }
-  .eng-mid  { background: rgba(245,158,11,0.15); color: var(--amber); }
-  .eng-low  { background: rgba(102,102,102,0.1); color: var(--muted); }
+  td.flag { font-size: 1.2rem; padding-right: 4px; }
+  td.val  { color: var(--accent); }
+  td.spread { color: var(--muted); }
+  td.up   { color: #34d399; }
+  td.dn   { color: var(--accent2); }
+  tr:hover td { background: rgba(255,255,255,.02); }
 
-  /* ── sort buttons ── */
-  .sort-row { display: flex; gap: 2px; margin-bottom: 16px; align-items: center; }
-  .sort-label { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-right: 8px; }
-
-  /* ── loading / error ── */
-  .loading {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--muted);
-    padding: 40px;
-    text-align: center;
-    animation: blink 1.2s infinite;
+  /* ── Loading ── */
+  #loading {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px;
+    z-index: 99;
   }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-  .error-msg {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--red);
-    padding: 16px;
-    border: 1px solid rgba(239,68,68,0.3);
-    background: rgba(239,68,68,0.05);
+  .spinner {
+    width: 36px; height: 36px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
   }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loading p { color: var(--muted); font-size: .85rem; }
 
-  /* ── footer ── */
-  footer {
-    border-top: 1px solid var(--border);
-    padding: 20px 32px;
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--muted);
-    display: flex;
-    justify-content: space-between;
-    margin-top: 48px;
-  }
-
-  /* ── two-col ── */
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
   @media (max-width: 700px) {
-    .two-col { grid-template-columns: 1fr; }
-    main { padding: 16px; }
-    header { padding: 16px; }
-    .metric-value { font-size: 22px; }
+    header, .controls, .country-toggles, .chart-wrap, .table-wrap { padding-left: 16px; padding-right: 16px; }
+    .chart-container { height: 340px; }
   }
 </style>
 </head>
 <body>
 
+<div id="loading">
+  <div class="spinner"></div>
+  <p>データ読み込み中…</p>
+</div>
+
 <header>
-  <div class="header-left">
-    <a class="logo" href="https://x.com/nshima_finance" target="_blank">@nshima_finance</a>
-    <span class="header-tag">X Analytics</span>
-  </div>
-  <div class="live-dot" id="updated-label">読み込み中...</div>
+  <div class="logo">Global Rates <span>Dashboard</span></div>
+  <div id="updated">—</div>
 </header>
 
-<main>
-
-  <!-- ── サマリー ── -->
-  <div class="section-label">summary</div>
-  <div class="metric-grid" id="metric-grid">
-    <div class="loading">loading…</div>
+<div class="controls">
+  <div class="seg-group" id="type-toggle">
+    <button class="active" data-type="policy">政策金利</button>
+    <button data-type="yield">10年国債</button>
+    <button data-type="both">両方</button>
   </div>
-
-  <!-- ── フォロワー推移 ── -->
-  <div class="section-label">フォロワー推移</div>
-  <div class="chart-card">
-    <div class="chart-title">Follower growth</div>
-    <div class="chart-sub" id="follower-range">—</div>
-    <div class="tab-row">
-      <button class="tab" onclick="setFollowerRange('all',this)">ALL</button>
-      <button class="tab" onclick="setFollowerRange('180',this)">180D</button>
-      <button class="tab active" onclick="setFollowerRange('90',this)">90D</button>
-      <button class="tab" onclick="setFollowerRange('30',this)">30D</button>
-    </div>
-    <div class="chart-wrap"><canvas id="followerChart" role="img" aria-label="フォロワー推移グラフ"></canvas></div>
+  <div class="range-group">
+    <button class="range-btn" data-years="1">1Y</button>
+    <button class="range-btn" data-years="3">3Y</button>
+    <button class="range-btn" data-years="5">5Y</button>
+    <button class="range-btn active" data-years="10">10Y</button>
+    <button class="range-btn" data-years="30">30Y</button>
   </div>
+</div>
 
-  <!-- ── フォロワー日次変化 ── -->
-  <div class="chart-card">
-    <div class="chart-title">フォロワー日次変化</div>
-    <div class="chart-sub">日次増減 + 7日移動平均</div>
-    <div class="chart-wrap" style="height:200px"><canvas id="followerDeltaChart" role="img" aria-label="フォロワー日次変化"></canvas></div>
+<div class="country-toggles" id="country-toggles"></div>
+
+<div class="chart-wrap">
+  <div class="chart-container">
+    <canvas id="mainChart"></canvas>
   </div>
+  <div class="chart-hint">ドラッグ: ズーム　　ホイール: スクロール　　ダブルクリック: リセット</div>
+</div>
 
-  <!-- ── 日次インプレッション・いいね ── -->
-  <div class="two-col">
-    <div class="chart-card">
-      <div class="chart-title">日次インプレッション</div>
-      <div class="chart-sub">直近30日</div>
-      <div class="chart-wrap" style="height:180px"><canvas id="impChart" role="img" aria-label="日次インプレッション"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">日次いいね・エンゲージメント</div>
-      <div class="chart-sub">直近30日</div>
-      <div class="chart-wrap" style="height:180px"><canvas id="engChart" role="img" aria-label="日次いいね"></canvas></div>
-    </div>
-  </div>
+<div class="table-wrap">
+  <div class="section-title">最新値</div>
+  <table id="latest-table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>国</th>
+        <th>政策金利</th>
+        <th>10年利回り</th>
+        <th>スプレッド</th>
+        <th>前日比 (政策)</th>
+        <th>前日比 (10年)</th>
+      </tr>
+    </thead>
+    <tbody id="latest-body"></tbody>
+  </table>
+</div>
 
-  <!-- ── 曜日別平均インプレッション ── -->
-  <div class="chart-card">
-    <div class="chart-title">曜日別 平均インプレッション</div>
-    <div class="chart-sub">全期間平均（投稿効果の高い曜日を把握）</div>
-    <div class="chart-wrap" style="height:180px"><canvas id="dowChart" role="img" aria-label="曜日別平均インプレッション"></canvas></div>
-  </div>
-
-  <!-- ── ツイート別パフォーマンス ── -->
-  <div class="section-label">投稿別パフォーマンス</div>
-  <div class="sort-row">
-    <span class="sort-label">sort by</span>
-    <button class="tab active" onclick="sortTweets('created_at',this)">新着順</button>
-    <button class="tab" onclick="sortTweets('impressions',this)">インプレッション</button>
-    <button class="tab" onclick="sortTweets('likes',this)">いいね</button>
-    <button class="tab" onclick="sortTweets('eng_rate',this)">エンゲージ率</button>
-  </div>
-  <div class="chart-card" style="padding:0; overflow:auto">
-    <table class="tweet-table" id="tweet-table">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>投稿内容</th>
-          <th>投稿日</th>
-          <th style="text-align:right">IMP</th>
-          <th style="text-align:right">❤</th>
-          <th style="text-align:right">RT</th>
-          <th>Eng率</th>
-        </tr>
-      </thead>
-      <tbody id="tweet-tbody">
-        <tr><td colspan="7" class="loading">loading…</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-</main>
-
-<footer>
-  <span>@nshima_finance · X Analytics Dashboard</span>
-  <span id="footer-updated">—</span>
-</footer>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
-// ── データソース ──────────────────────────────────────────
-const REPO = 'take-cmd-web/X_follower';
-const RAW  = `https://raw.githubusercontent.com/${REPO}/main/data`;
+const COUNTRIES = {
+  Japan:       { label: "日本",   flag: "🇯🇵", color: "var(--c-japan)" },
+  USA:         { label: "米国",   flag: "🇺🇸", color: "var(--c-usa)" },
+  Germany:     { label: "ドイツ", flag: "🇩🇪", color: "var(--c-germany)" },
+  UK:          { label: "英国",   flag: "🇬🇧", color: "var(--c-uk)" },
+  Australia:   { label: "豪州",   flag: "🇦🇺", color: "var(--c-aus)" },
+  Canada:      { label: "カナダ", flag: "🇨🇦", color: "var(--c-canada)" },
+  Switzerland: { label: "スイス", flag: "🇨🇭", color: "var(--c-swiss)" },
+};
 
-// ── グローバル状態 ────────────────────────────────────────
-let allFollowers = [];
-let allOverview  = [];
-let allTweets    = [];
-let followerChart, followerDeltaChart, impChart, engChart, dowChart;
-let currentSort  = 'created_at';
+// CSS var → hex (for Chart.js)
+const COLORS = {
+  Japan:       "#e8534a",
+  USA:         "#4a8fe8",
+  Germany:     "#f0c040",
+  UK:          "#8b5cf6",
+  Australia:   "#34d399",
+  Canada:      "#f97316",
+  Switzerland: "#ec4899",
+};
 
-// ── CSV パーサー（複数行フィールド対応） ─────────────────
-function parseCSV(text) {
-  const src = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-  const rows = [];
-  let cur = '', inQ = false, fields = [];
-  for (let i = 0; i < src.length; i++) {
-    const c = src[i];
-    if (c === '"') {
-      if (inQ && src[i+1] === '"') { cur += '"'; i++; }
-      else inQ = !inQ;
-    } else if (c === ',' && !inQ) {
-      fields.push(cur); cur = '';
-    } else if (c === '\n' && !inQ) {
-      fields.push(cur); cur = '';
-      if (fields.some(f => f.trim())) rows.push(fields);
-      fields = [];
-    } else {
-      cur += c;
-    }
-  }
-  if (cur || fields.length) { fields.push(cur); if (fields.some(f => f.trim())) rows.push(fields); }
-  const headers = rows[0].map(h => h.replace(/\\/g,'').trim().replace(/^"|"$/g,''));
-  return rows.slice(1).filter(r => r.length > 1).map(vals => {
-    const obj = {};
-    headers.forEach((h, i) => obj[h] = (vals[i] || '').replace(/^"|"$/g,'').trim());
-    return obj;
+let policyData = {}, yieldData = {};
+let allDates = [];
+let activeCountries = new Set(Object.keys(COUNTRIES));
+let activeType = "policy";
+let activeYears = 10;
+let chart = null;
+
+// ── CSV fetch & parse ──────────────────────────────────────
+async function loadCSV(path) {
+  const res = await fetch(path);
+  const text = await res.text();
+  return new Promise(resolve => {
+    Papa.parse(text, {
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: true,
+      complete: r => resolve(r.data)
+    });
   });
 }
 
-// ── fetch ─────────────────────────────────────────────────
-async function fetchCSV(filename) {
-  const res = await fetch(`${RAW}/${filename}?_=${Date.now()}`);
-  if (!res.ok) throw new Error(`${filename} not found`);
-  return parseCSV(await res.text());
+function csvToMap(rows) {
+  const map = {};
+  const countries = Object.keys(rows[0]).filter(k => k !== "date");
+  countries.forEach(c => map[c] = []);
+  rows.forEach(row => {
+    countries.forEach(c => {
+      map[c].push({ date: row.date, value: row[c] });
+    });
+  });
+  return { map, dates: rows.map(r => r.date) };
 }
 
-// ── 数値フォーマット ──────────────────────────────────────
-function fmt(n) {
-  const v = Number(n) || 0;
-  return v >= 1000 ? (v/1000).toFixed(1)+'k' : String(v);
-}
-function fmtFull(n) { return (Number(n)||0).toLocaleString(); }
+// ── Build chart datasets ───────────────────────────────────
+function buildDatasets() {
+  const cutoff = new Date();
+  cutoff.setFullYear(cutoff.getFullYear() - activeYears);
+  const cutStr = cutoff.toISOString().slice(0, 10);
 
-// ── メトリクスカード描画 ──────────────────────────────────
-function renderMetrics() {
-  // 最新フォロワー
-  const latestF = allFollowers.filter(r => r.followers).sort((a,b) => b.date.localeCompare(a.date));
-  const followers = Number(latestF[0]?.followers) || 0;
-  const prevF = Number(latestF[1]?.followers) || followers;
-  const fDelta = followers - prevF;
+  // dates from policy (or yield if both)
+  const srcDates = activeType === "yield"
+    ? Object.values(yieldData)[0]?.map(d => d.date) || allDates
+    : Object.values(policyData)[0]?.map(d => d.date) || allDates;
 
-  // 直近30日のoverview集計
-  const cutoff30 = new Date(); cutoff30.setDate(cutoff30.getDate()-30);
-  const recent30 = allOverview.filter(r => new Date(r._date) >= cutoff30);
-  const totalImp30 = recent30.reduce((s,r) => s + (Number(r['インプレッション数'])||0), 0);
-  const totalLike30 = recent30.reduce((s,r) => s + (Number(r['いいね'])||0), 0);
-  const totalNewF30 = recent30.reduce((s,r) => s + (Number(r['新しいフォロー'])||0), 0);
+  const filteredDates = srcDates.filter(d => d >= cutStr);
 
-  // 直近7日
-  const cutoff7 = new Date(); cutoff7.setDate(cutoff7.getDate()-7);
-  const recent7 = allOverview.filter(r => new Date(r._date) >= cutoff7);
-  const totalImp7 = recent7.reduce((s,r) => s + (Number(r['インプレッション数'])||0), 0);
+  const datasets = [];
+  activeCountries.forEach(country => {
+    const meta = COUNTRIES[country];
+    const color = COLORS[country];
 
-  const prev7start = new Date(); prev7start.setDate(prev7start.getDate()-14);
-  const prev7 = allOverview.filter(r => new Date(r._date) >= prev7start && new Date(r._date) < cutoff7);
-  const prevImp7 = prev7.reduce((s,r) => s + (Number(r['インプレッション数'])||0), 0);
-  const impDeltaPct = prevImp7 > 0 ? Math.round((totalImp7 - prevImp7)/prevImp7*100) : 0;
-
-  const cards = [
-    { label: 'FOLLOWERS', value: fmtFull(followers), delta: fDelta >= 0 ? `+${fDelta} vs 前日` : `${fDelta} vs 前日`, up: fDelta >= 0 },
-    { label: 'IMP / 7D', value: fmt(totalImp7), delta: impDeltaPct >= 0 ? `+${impDeltaPct}% vs 前週` : `${impDeltaPct}% vs 前週`, up: impDeltaPct >= 0 },
-    { label: 'IMP / 30D', value: fmt(totalImp30), delta: '直近30日合計', flat: true },
-    { label: 'いいね / 30D', value: fmt(totalLike30), delta: '直近30日合計', flat: true },
-    { label: '新フォロー / 30D', value: fmtFull(totalNewF30), delta: '直近30日', flat: true },
-  ];
-
-  document.getElementById('metric-grid').innerHTML = cards.map(c => `
-    <div class="metric-card">
-      <div class="metric-label">${c.label}</div>
-      <div class="metric-value">${c.value}</div>
-      <div class="metric-delta ${c.flat ? 'delta-flat' : c.up ? 'delta-up' : 'delta-down'}">
-        ${c.flat ? '' : (c.up ? '▲' : '▼')} ${c.delta}
-      </div>
-    </div>
-  `).join('');
-}
-
-// ── フォロワーチャート ────────────────────────────────────
-let followerDays = 90;
-function setFollowerRange(range, btn) {
-  document.querySelectorAll('.tab-row .tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  followerDays = range === 'all' ? 9999 : parseInt(range);
-  drawFollowerChart();
-  drawFollowerDeltaChart();
-}
-
-function drawFollowerChart() {
-  const sorted = [...allFollowers].filter(r => r.followers).sort((a,b) => a.date.localeCompare(b.date));
-  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - followerDays);
-  const data = followerDays >= 9999 ? sorted : sorted.filter(r => new Date(r.date) >= cutoff);
-
-  const labels = data.map(r => r.date.slice(5));
-  const values = data.map(r => Number(r.followers));
-
-  document.getElementById('follower-range').textContent =
-    data.length > 0 ? `${data[0].date} 〜 ${data[data.length-1].date}` : '';
-
-  if (followerChart) followerChart.destroy();
-  followerChart = new Chart(document.getElementById('followerChart'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
+    const makeDataset = (dataMap, label, dash = []) => {
+      const series = dataMap[country] || [];
+      const values = series
+        .filter(d => d.date >= cutStr)
+        .map(d => d.value == null || d.value === "" ? null : +d.value);
+      return {
+        label: `${meta.flag} ${meta.label} ${label}`,
         data: values,
-        borderColor: '#1d9bf0',
-        backgroundColor: 'rgba(29,155,240,0.08)',
-        borderWidth: 1.5,
-        pointRadius: data.length > 60 ? 0 : 3,
-        pointHoverRadius: 5,
-        fill: true,
+        borderColor: color,
+        backgroundColor: color + "18",
+        borderWidth: activeType === "both" ? 1.5 : 2,
+        borderDash: dash,
+        pointRadius: 0,
         tension: 0.3,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: {
-        callbacks: { label: ctx => `${fmtFull(ctx.parsed.y)} followers` }
-      }},
-      scales: {
-        x: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 10 }, maxTicksLimit: 8, maxRotation: 0 }, grid: { color: '#1a1a1a' } },
-        y: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a1a' } }
-      }
+        spanGaps: true,
+      };
+    };
+
+    if (activeType === "policy" || activeType === "both") {
+      datasets.push(makeDataset(policyData, "政策金利"));
+    }
+    if (activeType === "yield" || activeType === "both") {
+      datasets.push(makeDataset(yieldData, "10年", [4, 3]));
     }
   });
+
+  return { labels: filteredDates, datasets };
 }
 
-// ── フォロワー日次変化チャート ───────────────────────────
-function drawFollowerDeltaChart() {
-  const all = [...allFollowers].filter(r => r.followers).sort((a,b) => a.date.localeCompare(b.date));
-  if (all.length < 2) return;
-  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - followerDays);
-  const sorted = followerDays >= 9999 ? all : all.filter(r => new Date(r.date) >= cutoff);
-  if (sorted.length < 2) return;
+// ── Render chart ───────────────────────────────────────────
+function renderChart() {
+  const { labels, datasets } = buildDatasets();
 
-  const labels = [], deltas = [], ma7 = [];
-  for (let i = 1; i < sorted.length; i++) {
-    const d = Number(sorted[i].followers) - Number(sorted[i-1].followers);
-    labels.push(sorted[i].date.slice(5));
-    deltas.push(d);
-  }
-  // 7日移動平均
-  for (let i = 0; i < deltas.length; i++) {
-    const start = Math.max(0, i - 6);
-    const slice = deltas.slice(start, i + 1);
-    ma7.push(Math.round(slice.reduce((a,b) => a+b, 0) / slice.length * 10) / 10);
+  if (chart) {
+    chart.data.labels = labels;
+    chart.data.datasets = datasets;
+    chart.update("active");
+    return;
   }
 
-  const colors = deltas.map(v => v >= 0 ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)');
-
-  if (followerDeltaChart) followerDeltaChart.destroy();
-  followerDeltaChart = new Chart(document.getElementById('followerDeltaChart'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        {
-          type: 'bar',
-          label: '日次増減',
-          data: deltas,
-          backgroundColor: colors,
-          borderWidth: 0,
-          order: 2,
-        },
-        {
-          type: 'line',
-          label: '7日移動平均',
-          data: ma7,
-          borderColor: '#f59e0b',
-          borderWidth: 2,
-          pointRadius: 0,
-          tension: 0.4,
-          order: 1,
-        }
-      ]
-    },
+  const ctx = document.getElementById("mainChart").getContext("2d");
+  chart = new Chart(ctx, {
+    type: "line",
+    data: { labels, datasets },
     options: {
-      responsive: true, maintainAspectRatio: false,
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
       plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => ctx.dataset.label + ': ' + (ctx.parsed.y >= 0 ? '+' : '') + ctx.parsed.y
+        legend: {
+          position: "bottom",
+          labels: {
+            color: "#7a7890",
+            font: { family: "'DM Mono', monospace", size: 11 },
+            boxWidth: 20, padding: 14,
           }
+        },
+        tooltip: {
+          backgroundColor: "#16161d",
+          borderColor: "#2a2a3a",
+          borderWidth: 1,
+          titleColor: "#e8e6f0",
+          bodyColor: "#a0a0b8",
+          titleFont: { family: "'Outfit', sans-serif" },
+          bodyFont: { family: "'DM Mono', monospace", size: 12 },
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + "%" : "—"}`
+          }
+        },
+        zoom: {
+          pan: { enabled: true, mode: "x" },
+          zoom: {
+            wheel: { enabled: true },
+            drag: { enabled: true, backgroundColor: "rgba(245,166,35,.12)" },
+            mode: "x",
+          },
+          limits: { x: { minRange: 30 } }
         }
       },
       scales: {
-        x: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 10, maxRotation: 0 }, grid: { display: false } },
-        y: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a1a' } }
+        x: {
+          ticks: {
+            color: "#7a7890",
+            font: { family: "'DM Mono', monospace", size: 10 },
+            maxTicksLimit: 10,
+            maxRotation: 0,
+          },
+          grid: { color: "#2a2a3a" }
+        },
+        y: {
+          ticks: {
+            color: "#7a7890",
+            font: { family: "'DM Mono', monospace", size: 11 },
+            callback: v => v.toFixed(1) + "%"
+          },
+          grid: { color: "#2a2a3a" }
+        }
       }
     }
   });
+
+  // double-click reset zoom
+  document.getElementById("mainChart").addEventListener("dblclick", () => chart.resetZoom());
 }
 
-// ── 日次インプレッションチャート ──────────────────────────
-function drawImpChart() {
-  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-30);
-  const data = allOverview.filter(r => new Date(r._date) >= cutoff).sort((a,b) => a._date.localeCompare(b._date));
-  const labels = data.map(r => r._date.slice(5));
-  const values = data.map(r => Number(r['インプレッション数'])||0);
+// ── Latest values table ────────────────────────────────────
+function renderTable() {
+  const tbody = document.getElementById("latest-body");
+  tbody.innerHTML = "";
 
-  if (impChart) impChart.destroy();
-  impChart = new Chart(document.getElementById('impChart'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{ data: values, backgroundColor: 'rgba(29,155,240,0.5)', borderColor: '#1d9bf0', borderWidth: 1 }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 6, maxRotation: 0 }, grid: { display: false } },
-        y: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a1a' } }
+  Object.keys(COUNTRIES).forEach(country => {
+    const meta = COUNTRIES[country];
+
+    const latest  = (map, key) => {
+      const arr = map[key] || [];
+      const rev = [...arr].reverse();
+      const hit = rev.find(d => d.value != null && d.value !== "");
+      return hit ? +hit.value : null;
+    };
+    const prev = (map, key) => {
+      const arr = map[key] || [];
+      const rev = [...arr].reverse();
+      let found = 0;
+      for (const d of rev) {
+        if (d.value != null && d.value !== "") {
+          found++;
+          if (found === 2) return +d.value;
+        }
       }
-    }
+      return null;
+    };
+
+    const pol  = latest(policyData, country);
+    const yld  = latest(yieldData, country);
+    const polP = prev(policyData, country);
+    const yldP = prev(yieldData, country);
+    const spread = (pol != null && yld != null) ? (yld - pol).toFixed(2) : "—";
+
+    const diffClass = (v, p) => v == null || p == null ? "" : v > p ? "up" : v < p ? "dn" : "";
+    const diffStr   = (v, p) => {
+      if (v == null || p == null) return "—";
+      const d = (v - p).toFixed(2);
+      return (v > p ? "+" : "") + d;
+    };
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="flag">${meta.flag}</td>
+      <td class="country-cell">${meta.label}</td>
+      <td class="val">${pol != null ? pol.toFixed(2) + "%" : "—"}</td>
+      <td class="val">${yld != null ? yld.toFixed(2) + "%" : "—"}</td>
+      <td class="spread">${spread !== "—" ? spread + "%" : "—"}</td>
+      <td class="${diffClass(pol, polP)}">${diffStr(pol, polP)}</td>
+      <td class="${diffClass(yld, yldP)}">${diffStr(yld, yldP)}</td>
+    `;
+    tbody.appendChild(tr);
   });
 }
 
-// ── 日次いいね・エンゲージメントチャート ─────────────────
-function drawEngChart() {
-  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-30);
-  const data = allOverview.filter(r => new Date(r._date) >= cutoff).sort((a,b) => a._date.localeCompare(b._date));
-  const labels = data.map(r => r._date.slice(5));
-  const likes = data.map(r => Number(r['いいね'])||0);
-  const engs  = data.map(r => Number(r['エンゲージメント'])||0);
-
-  if (engChart) engChart.destroy();
-  engChart = new Chart(document.getElementById('engChart'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label: 'いいね', data: likes, backgroundColor: 'rgba(239,68,68,0.5)', borderColor: '#ef4444', borderWidth: 1 },
-        { label: 'エンゲージ', data: engs, backgroundColor: 'rgba(245,158,11,0.3)', borderColor: '#f59e0b', borderWidth: 1 },
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 6, maxRotation: 0 }, grid: { display: false } },
-        y: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a1a' } }
+// ── Country toggles ────────────────────────────────────────
+function buildToggles() {
+  const wrap = document.getElementById("country-toggles");
+  Object.keys(COUNTRIES).forEach(key => {
+    const meta = COUNTRIES[key];
+    const el = document.createElement("div");
+    el.className = "ctog";
+    el.dataset.country = key;
+    el.innerHTML = `<span class="dot" style="background:${COLORS[key]}"></span>${meta.flag} ${meta.label}`;
+    el.addEventListener("click", () => {
+      if (activeCountries.has(key)) {
+        activeCountries.delete(key);
+        el.classList.add("off");
+      } else {
+        activeCountries.add(key);
+        el.classList.remove("off");
       }
-    }
+      renderChart();
+    });
+    wrap.appendChild(el);
   });
 }
 
-// ── 曜日別チャート ────────────────────────────────────────
-function drawDowChart() {
-  const DOW = ['日','月','火','水','木','金','土'];
-  const sums = [0,0,0,0,0,0,0];
-  const cnts = [0,0,0,0,0,0,0];
-  for (const r of allOverview) {
-    const d = new Date(r._date).getDay();
-    sums[d] += Number(r['インプレッション数'])||0;
-    cnts[d]++;
-  }
-  const avgs = sums.map((s,i) => cnts[i] > 0 ? Math.round(s/cnts[i]) : 0);
-  const maxAvg = Math.max(...avgs);
-  const colors = avgs.map(v => v === maxAvg ? '#1d9bf0' : 'rgba(29,155,240,0.3)');
+// ── Event listeners ────────────────────────────────────────
+document.getElementById("type-toggle").addEventListener("click", e => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  document.querySelectorAll("#type-toggle button").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  activeType = btn.dataset.type;
+  renderChart();
+});
 
-  if (dowChart) dowChart.destroy();
-  dowChart = new Chart(document.getElementById('dowChart'), {
-    type: 'bar',
-    data: {
-      labels: DOW,
-      datasets: [{ data: avgs, backgroundColor: colors, borderRadius: 2 }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: {
-        callbacks: { label: ctx => `平均 ${fmtFull(ctx.parsed.y)} imp` }
-      }},
-      scales: {
-        x: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 12 } }, grid: { display: false } },
-        y: { ticks: { color: '#cccccc', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a1a' } }
-      }
-    }
+document.querySelectorAll(".range-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".range-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    activeYears = +btn.dataset.years;
+    if (chart) chart.resetZoom();
+    renderChart();
   });
-}
+});
 
-// ── ツイートテーブル ──────────────────────────────────────
-function sortTweets(key, btn) {
-  document.querySelectorAll('.sort-row .tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  currentSort = key;
-  renderTweetTable();
-}
-
-function renderTweetTable() {
-  if (!allTweets.length) return;
-
-  const sorted = [...allTweets].sort((a,b) => {
-    if (currentSort === 'created_at') return b.created_at.localeCompare(a.created_at);
-    return (Number(b[currentSort])||0) - (Number(a[currentSort])||0);
-  });
-
-  const maxImp = Math.max(...sorted.map(r => Number(r.impressions)||0));
-
-  const rows = sorted.map((r, i) => {
-    const imp = Number(r.impressions)||0;
-    const eng = Number(r.eng_rate)||0;
-    const engClass = eng >= 2 ? 'eng-high' : eng >= 0.5 ? 'eng-mid' : 'eng-low';
-    const barW = maxImp > 0 ? Math.round(imp/maxImp*100) : 0;
-    const dateStr = r.created_at ? r.created_at.slice(0,10) : '';
-    const text = r.text || '(本文未取得)';
-    const tweetUrl = `https://x.com/nshima_finance/status/${r.tweet_id}`;
-
-    return `<tr>
-      <td class="num" style="color:var(--text)">${i+1}</td>
-      <td>
-        <a href="${tweetUrl}" target="_blank" style="text-decoration:none">
-          <div class="tweet-text">${escHtml(text)}</div>
-        </a>
-      </td>
-      <td class="tweet-date">${dateStr}</td>
-      <td class="num bar-cell">
-        ${fmtFull(imp)}
-        <div class="bar-bg"><div class="bar-fill" style="width:${barW}%"></div></div>
-      </td>
-      <td class="num">${r.likes||0}</td>
-      <td class="num">${r.retweets||0}</td>
-      <td><span class="eng-badge ${engClass}">${eng.toFixed(2)}%</span></td>
-    </tr>`;
-  }).join('');
-
-  document.getElementById('tweet-tbody').innerHTML = rows;
-}
-
-function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ── メイン ────────────────────────────────────────────────
-async function main() {
+// ── Init ───────────────────────────────────────────────────
+async function init() {
   try {
-    // 並列取得
-    const [followersRaw, tweetsRaw] = await Promise.all([
-      fetchCSV('followers.csv'),
-      fetchCSV('tweets.csv').catch(() => []),
+    const [polRows, yldRows, meta] = await Promise.all([
+      loadCSV("data/policy_rates.csv"),
+      loadCSV("data/yield_10y.csv"),
+      fetch("data/meta.json").then(r => r.json()).catch(() => null),
     ]);
 
-    // overview は followers.csv から再構築済みなので別ファイルを使う
-    // overview_analytics は GitHub に上げていないため followers で代替
-    // ただし account_overview_analytics は手動CSVなので別途対応
-    // → 今回は followers.csv + tweets.csv のみで構成
+    const polParsed = csvToMap(polRows);
+    const yldParsed = csvToMap(yldRows);
 
-    allFollowers = followersRaw;
+    policyData = polParsed.map;
+    yieldData  = yldParsed.map;
+    allDates   = polParsed.dates;
 
-    // overview を followers から日次差分で近似
-    const sortedF = [...allFollowers].filter(r=>r.followers).sort((a,b)=>a.date.localeCompare(b.date));
-    // tweets.csv から日次集計を生成
-    allTweets = tweetsRaw;
-
-    // overview_analytics を直接 fetch（リポジトリに追加されていれば）
-    try {
-      const ov = await fetchCSV('account_overview.csv');
-      allOverview = ov.map(r => {
-        const raw = r['Date'] || r['date'] || '';
-        let d = '';
-        try { d = new Date(raw).toISOString().slice(0,10); } catch(e) { d = raw; }
-        return { ...r, _date: d };
-      }).filter(r => r._date);
-    } catch {
-      // overview がない場合は tweets.csv から日次集計を生成
-      const dayMap = {};
-      for (const t of allTweets) {
-        const d = (t.snapshot_date || t.created_at || '').slice(0,10);
-        if (!d) continue;
-        if (!dayMap[d]) dayMap[d] = { _date: d, 'インプレッション数': 0, 'いいね': 0, 'エンゲージメント': 0, '新しいフォロー': 0, 'フォロー解除': 0 };
-        dayMap[d]['インプレッション数'] += Number(t.impressions)||0;
-        dayMap[d]['いいね'] += Number(t.likes)||0;
-        dayMap[d]['エンゲージメント'] += Number(t.likes)||0 + Number(t.replies)||0 + Number(t.retweets)||0;
-      }
-      allOverview = Object.values(dayMap);
+    if (meta?.updated_at) {
+      const d = new Date(meta.updated_at);
+      document.getElementById("updated").textContent =
+        "Updated: " + d.toLocaleDateString("ja-JP") + " " + d.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" }) + " UTC";
     }
 
-    // 更新日時（updated_at列があれば日時、なければ日付のみ）
-    const latestRow = sortedF[sortedF.length-1];
-    const latestDateTime = latestRow?.updated_at || latestRow?.date || '—';
-    document.getElementById('updated-label').textContent = `更新: ${latestDateTime}`;
-    document.getElementById('footer-updated').textContent = `last updated: ${latestDateTime} JST`;
+    buildToggles();
+    renderChart();
+    renderTable();
 
-    // 描画
-    renderMetrics();
-    drawFollowerChart();
-    drawFollowerDeltaChart();
-    drawImpChart();
-    drawEngChart();
-    drawDowChart();
-    renderTweetTable();
-
-  } catch(e) {
-    document.getElementById('metric-grid').innerHTML =
-      `<div class="error-msg">データ取得エラー: ${e.message}<br>GitHubリポジトリがPublicか、ファイルパスを確認してください。</div>`;
-    console.error(e);
+    document.getElementById("loading").style.display = "none";
+  } catch (err) {
+    console.error(err);
+    document.getElementById("loading").innerHTML =
+      `<p style="color:var(--accent2)">データ読み込みエラー: ${err.message}</p>`;
   }
 }
 
-main();
+init();
 </script>
 </body>
 </html>
