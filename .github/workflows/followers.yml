@@ -1,10 +1,10 @@
 name: Track followers
-
 on:
   schedule:
-    - cron: "0 19 * * *"   # UTC 19:00 = JST 04:00
+    - cron: "0 22 * * *"   # UTC 22:00 = JST 07:00（翌日／6時投稿の初速）
     - cron: "0 1 * * *"    # UTC 01:00 = JST 10:00
     - cron: "0 8 * * *"    # UTC 08:00 = JST 17:00
+    - cron: "0 12 * * *"   # UTC 12:00 = JST 21:00（20時投稿の初速）
   workflow_dispatch:        # 手動実行も可能
 
 permissions:
@@ -31,5 +31,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/
-          git diff --staged --quiet || git commit -m "chore: daily metrics $(date -u +%F)"
+          git diff --staged --quiet || git commit -m "chore: daily metrics $(TZ=Asia/Tokyo date +%F)"
           git push
