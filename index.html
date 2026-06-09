@@ -389,7 +389,7 @@
         <tr>
           <th>#</th>
           <th>投稿内容</th>
-          <th>投稿日</th>
+          <th>投稿日時</th>
           <th style="text-align:right">IMP</th>
           <th style="text-align:right">❤</th>
           <th style="text-align:right">RT</th>
@@ -479,6 +479,40 @@ function fmt(n) {
   return v >= 1000 ? (v/1000).toFixed(1)+'k' : String(v);
 }
 function fmtFull(n) { return (Number(n)||0).toLocaleString(); }
+
+// ── UTC文字列(created_at)をJSTの YYYY-MM-DD に変換 ───────────
+// tweets.csv の created_at は UTC。+9時間してJST日付を返す。
+function utcToJstDate(s) {
+  if (!s) return '';
+  // "2026-06-08 20:58:23" / "2026-06-08T20:58:23Z" 等を UTC として解釈
+  const iso = s.trim().replace(' ', 'T');
+  const dt = new Date(iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z');
+  if (isNaN(dt)) return s.slice(0,10);
+  const jst = new Date(dt.getTime() + 9*60*60*1000);
+  const y = jst.getUTCFullYear();
+  const m = String(jst.getUTCMonth()+1).padStart(2,'0');
+  const d = String(jst.getUTCDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+
+// created_at(UTC) を JST 相当の Date として返す（getDay等の曜日判定用）。
+// getUTCDay() を使えばこの戻り値からJSTの曜日が取れる。
+function utcToJstDateObj(s) {
+  if (!s) return null;
+  const iso = s.trim().replace(' ', 'T');
+  const dt = new Date(iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z');
+  if (isNaN(dt)) return null;
+  return new Date(dt.getTime() + 9*60*60*1000);
+}
+
+// created_at(UTC) を JST の "HH:MM" に変換
+function utcToJstTime(s) {
+  const jst = utcToJstDateObj(s);
+  if (!jst) return '';
+  const hh = String(jst.getUTCHours()).padStart(2,'0');
+  const mm = String(jst.getUTCMinutes()).padStart(2,'0');
+  return `${hh}:${mm}`;
+}
 
 // ── メトリクスカード描画 ──────────────────────────────────
 function renderMetrics() {
@@ -709,11 +743,13 @@ function drawDowChart() {
   today.setHours(0,0,0,0);
   const cutoff56 = new Date(today); cutoff56.setDate(today.getDate()-56);
   const recent = allTweets.filter(r => {
-    const d = new Date(r.created_at);
-    return d >= cutoff56 && d < today;
+    const d = utcToJstDateObj(r.created_at);
+    return d && d >= cutoff56 && d < today;
   });
   for (const r of recent) {
-    const d = new Date(r.created_at).getDay();
+    const jstD = utcToJstDateObj(r.created_at);
+    if (!jstD) continue;
+    const d = jstD.getUTCDay(); // JST相当のDateなのでUTC曜日でJSTの曜日が得られる
     sums[d] += Number(r.impressions)||0;
     cnts[d]++;
   }
@@ -764,7 +800,8 @@ function renderTweetTable() {
     const eng = Number(r.eng_rate)||0;
     const engClass = eng >= 2 ? 'eng-high' : eng >= 0.5 ? 'eng-mid' : 'eng-low';
     const barW = maxImp > 0 ? Math.round(imp/maxImp*100) : 0;
-    const dateStr = r.created_at ? r.created_at.slice(0,10) : '';
+    const dateStr = utcToJstDate(r.created_at);
+    const timeStr = utcToJstTime(r.created_at);
     const text = r.text || '(本文未取得)';
     const tweetUrl = `https://x.com/nshima_finance/status/${r.tweet_id}`;
 
@@ -775,7 +812,7 @@ function renderTweetTable() {
           <div class="tweet-text">${escHtml(text)}</div>
         </a>
       </td>
-      <td class="tweet-date">${dateStr}</td>
+      <td class="tweet-date">${dateStr}<br><span style="color:var(--muted);font-size:10px">${timeStr}</span></td>
       <td class="num bar-cell">
         ${fmtFull(imp)}
         <div class="bar-bg"><div class="bar-fill" style="width:${barW}%"></div></div>
