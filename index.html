@@ -844,10 +844,27 @@ async function main() {
     const sortedF = [...allFollowers].filter(r=>r.followers).sort((a,b)=>a.date.localeCompare(b.date));
     allTweets = tweetsRaw;
 
-    // overview_analytics を直接 fetch（リポジトリに追加されていれば）
+    // tweets.csv から日次集計（JST日付ベース）を作るヘルパー
+    function buildOverviewFromTweets() {
+      const dayMap = {};
+      for (const t of allTweets) {
+        // created_at(UTC) を JST 日付に換算してから日次集計
+        const d = utcToJstDate(t.created_at) || (t.snapshot_date || '').slice(0,10);
+        if (!d) continue;
+        if (!dayMap[d]) dayMap[d] = { _date: d, 'インプレッション数': 0, 'いいね': 0, 'エンゲージメント': 0, '新しいフォロー': 0, 'フォロー解除': 0 };
+        dayMap[d]['インプレッション数'] += Number(t.impressions)||0;
+        dayMap[d]['いいね'] += Number(t.likes)||0;
+        // エンゲージメント総数は overview にしか無いため、いいね+RT+返信で近似
+        dayMap[d]['エンゲージメント'] += (Number(t.likes)||0) + (Number(t.replies)||0) + (Number(t.retweets)||0);
+      }
+      return Object.values(dayMap);
+    }
+
+    // overview を取得。古い/無い場合は tweets.csv 集計にフォールバック
+    let overviewStale = true;
     try {
       const ov = await fetchCSV('account_overview.csv');
-      allOverview = ov.map(r => {
+      const mapped = ov.map(r => {
         const raw = (r['Date'] || r['date'] || '').trim();
         let d = '';
         try {
@@ -860,18 +877,32 @@ async function main() {
         } catch(e) { d = raw; }
         return { ...r, _date: d };
       }).filter(r => r._date && r._date.match(/^\d{4}-\d{2}-\d{2}$/));
-    } catch {
-      // overview がない場合は tweets.csv から日次集計を生成
-      const dayMap = {};
-      for (const t of allTweets) {
-        const d = (t.snapshot_date || t.created_at || '').slice(0,10);
-        if (!d) continue;
-        if (!dayMap[d]) dayMap[d] = { _date: d, 'インプレッション数': 0, 'いいね': 0, 'エンゲージメント': 0, '新しいフォロー': 0, 'フォロー解除': 0 };
-        dayMap[d]['インプレッション数'] += Number(t.impressions)||0;
-        dayMap[d]['いいね'] += Number(t.likes)||0;
-        dayMap[d]['エンゲージメント'] += Number(t.likes)||0 + Number(t.replies)||0 + Number(t.retweets)||0;
+
+      // 最新日が7日以上前なら「更新停止」とみなす
+      if (mapped.length) {
+        const latestOv = mapped.map(r => r._date).sort().pop();
+        const ageDays = (Date.now() - new Date(latestOv).getTime()) / 86400000;
+        overviewStale = ageDays > 7;
       }
-      allOverview = Object.values(dayMap);
+      allOverview = mapped;
+    } catch {
+      overviewStale = true;
+    }
+
+    // overview が無い or 更新停止 → tweets.csv 集計で代替（チャートが空にならないように）
+    if (overviewStale) {
+      allOverview = buildOverviewFromTweets();
+      // サブタイトルに代替であることを明記
+      document.querySelectorAll('.chart-card').forEach(card => {
+        const title = card.querySelector('.chart-title')?.textContent || '';
+        if (title.includes('日次インプレッション') || title.includes('日次いいね')) {
+          const sub = card.querySelector('.chart-sub');
+          if (sub && !sub.dataset.noted) {
+            sub.textContent += '（概要CSV未更新のためツイート集計ベース）';
+            sub.dataset.noted = '1';
+          }
+        }
+      });
     }
 
     // 更新日時（updated_at列があれば日時、なければ日付のみ）
