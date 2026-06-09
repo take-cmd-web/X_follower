@@ -413,6 +413,9 @@
 <script>
 // ── データソース ──────────────────────────────────────────
 const REPO = 'take-cmd-web/X_follower';
+// Contents API：コミット直後の最新を返す（raw のような CDN キャッシュ事故が無い）
+const API  = `https://api.github.com/repos/${REPO}/contents/data`;
+// フォールバック用（API がレート制限等で失敗した場合のみ使う）
 const RAW  = `https://raw.githubusercontent.com/${REPO}/main/data`;
 
 // ── グローバル状態 ────────────────────────────────────────
@@ -452,10 +455,22 @@ function parseCSV(text) {
 }
 
 // ── fetch ─────────────────────────────────────────────────
+// 1. Contents API（最新コミットを確実に取得） → 2. raw（フォールバック）
 async function fetchCSV(filename) {
-  const res = await fetch(`${RAW}/${filename}?_=${Date.now()}`);
-  if (!res.ok) throw new Error(`${filename} not found`);
-  return parseCSV(await res.text());
+  // 1. Contents API：Accept ヘッダで Base64 ではなく生のテキストを受け取る
+  try {
+    const res = await fetch(`${API}/${filename}?ref=main`, {
+      headers: { 'Accept': 'application/vnd.github.raw' },
+      cache: 'no-store'
+    });
+    if (res.ok) return parseCSV(await res.text());
+    // 403（レート制限）等はフォールバックへ
+  } catch (e) { /* ネットワークエラー → フォールバックへ */ }
+
+  // 2. フォールバック：raw（API 失敗・レート制限時のみ）
+  const res2 = await fetch(`${RAW}/${filename}?_=${Date.now()}`, { cache: 'no-store' });
+  if (!res2.ok) throw new Error(`${filename} not found`);
+  return parseCSV(await res2.text());
 }
 
 // ── 数値フォーマット ──────────────────────────────────────
@@ -787,16 +802,9 @@ async function main() {
       fetchCSV('tweets.csv').catch(() => []),
     ]);
 
-    // overview は followers.csv から再構築済みなので別ファイルを使う
-    // overview_analytics は GitHub に上げていないため followers で代替
-    // ただし account_overview_analytics は手動CSVなので別途対応
-    // → 今回は followers.csv + tweets.csv のみで構成
-
     allFollowers = followersRaw;
 
-    // overview を followers から日次差分で近似
     const sortedF = [...allFollowers].filter(r=>r.followers).sort((a,b)=>a.date.localeCompare(b.date));
-    // tweets.csv から日次集計を生成
     allTweets = tweetsRaw;
 
     // overview_analytics を直接 fetch（リポジトリに追加されていれば）
