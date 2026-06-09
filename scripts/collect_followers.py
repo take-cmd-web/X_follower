@@ -44,7 +44,7 @@ print(f"Recorded: {today} followers={m['followers_count']}")
 # ── ツイート取得（拡張版） ────────────────────────────────
 tweets = client.get_users_tweets(
     id=user.data.id,
-    max_results=100,
+    max_results=50,
     tweet_fields=["public_metrics", "created_at", "text", "entities", "attachments"],
     expansions=["attachments.media_keys"],
     exclude=["retweets", "replies"],
