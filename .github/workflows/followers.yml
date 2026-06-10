@@ -2,14 +2,13 @@ name: Track followers
 
 on:
   schedule:
-    # ── ツイート取得込み（フォロワー記録も同時に実行）JST 4/8/12/21時 ──
+    # ── フォロワー記録のみ JST 4〜22時の2時間おき（1日10回）──
+    # ツイート収集は GAS（x_posts.csv）に分離したため Actions はフォロワーのみ
     - cron: "0 19 * * *"   # UTC 19:00 = JST 04:00
-    - cron: "0 23 * * *"   # UTC 23:00 = JST 08:00
-    - cron: "0 3 * * *"    # UTC 03:00 = JST 12:00
-    - cron: "0 12 * * *"   # UTC 12:00 = JST 21:00
-    # ── フォロワー記録のみ JST 6/10/14/16/18/20/22時 ──
     - cron: "0 21 * * *"   # UTC 21:00 = JST 06:00
+    - cron: "0 23 * * *"   # UTC 23:00 = JST 08:00
     - cron: "0 1 * * *"    # UTC 01:00 = JST 10:00
+    - cron: "0 3 * * *"    # UTC 03:00 = JST 12:00
     - cron: "0 5 * * *"    # UTC 05:00 = JST 14:00
     - cron: "0 7 * * *"    # UTC 07:00 = JST 16:00
     - cron: "0 9 * * *"    # UTC 09:00 = JST 18:00
@@ -30,30 +29,15 @@ jobs:
           python-version: "3.12"
       - run: pip install tweepy
 
-      # 起動した cron の時刻でスクリプトを振り分け
-      # ツイート取得時刻（UTC 19/23/3/12時）→ collect_followers.py
-      # それ以外（フォロワー専用時刻）→ collect_followers_only.py
-      - name: Collect metrics
+      - name: Collect followers
         env:
           X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
-          SCHEDULE_CRON: ${{ github.event.schedule }}
-        run: |
-          if [ "$SCHEDULE_CRON" = "0 19 * * *" ] || \
-             [ "$SCHEDULE_CRON" = "0 23 * * *" ] || \
-             [ "$SCHEDULE_CRON" = "0 3 * * *" ]  || \
-             [ "$SCHEDULE_CRON" = "0 12 * * *" ] || \
-             [ -z "$SCHEDULE_CRON" ]; then
-            echo "Running full collection (followers + tweets)"
-            python scripts/collect_followers.py
-          else
-            echo "Running followers-only collection"
-            python scripts/collect_followers_only.py
-          fi
+        run: python scripts/collect_followers_only.py
 
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/
-          git diff --staged --quiet || git commit -m "chore: metrics $(TZ=Asia/Tokyo date +'%F %H:%M')"
+          git diff --staged --quiet || git commit -m "chore: followers $(TZ=Asia/Tokyo date +'%F %H:%M')"
           git push
