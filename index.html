@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X Analytics — @nshima_finance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f0e8;
+    --bg2: #ede8dc;
+    --bg3: #e0dbd0;
+    --border: #ccc8be;
+    --border2: #b8b4aa;
+    --text: #2c2a25;
+    --muted: #6b6860;
+    --dim: #d0ccc0;
+    --accent: #1d9bf0;
+    --accent2: #0f6e9e;
+    --green: #2a7a3b;
+    --red: #c0392b;
+    --amber: #c97a00;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Noto Sans JP', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── header ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: rgba(245,240,232,0.95);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    text-decoration: none;
+  }
+  .header-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    border: 1px solid var(--border2);
+    padding: 2px 8px;
+    border-radius: 2px;
+  }
+  .live-dot {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .live-dot::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ── layout ── */
+  main { max-width: 1100px; margin: 0 auto; padding: 32px; }
+
+  /* ── section titles ── */
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── metric cards ── */
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+  .metric-card {
+    background: var(--bg2);
+    padding: 20px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .metric-card:hover::before { opacity: 1; }
+  .metric-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .metric-value {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .metric-delta {
+    font-family: var(--mono);
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .delta-up { color: var(--green); }
+  .delta-down { color: var(--red); }
+  .delta-flat { color: var(--muted); }
+
+  /* ── chart containers ── */
+  .chart-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .chart-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+  .chart-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+  .chart-wrap { position: relative; width: 100%; height: 220px; }
+
+  /* ── filter tabs ── */
+  .tab-row {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 20px;
+  }
+  .tab {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 12px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab:hover { color: var(--text); border-color: var(--dim); }
+  .tab.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  /* ── tweet table ── */
+  .tweet-table { width: 100%; border-collapse: collapse; }
+  .tweet-table th {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 400;
+  }
+  .tweet-table td {
+    padding: 12px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    font-size: 13px;
+  }
+  .tweet-table tr:hover td { background: var(--bg3); }
+  .tweet-text {
+    color: var(--text);
+    line-height: 1.5;
+    max-width: 380px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .tweet-date {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .num {
+    font-family: var(--mono);
+    font-size: 13px;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .bar-cell { min-width: 80px; }
+  .bar-bg {
+    background: var(--bg3);
+    height: 4px;
+    border-radius: 2px;
+    margin-top: 6px;
+  }
+  .bar-fill {
+    background: var(--accent);
+    height: 4px;
+    border-radius: 2px;
+    transition: width 0.6s ease;
+  }
+  .eng-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .eng-high { background: rgba(34,197,94,0.15); color: var(--green); }
+  .eng-mid  { background: rgba(245,158,11,0.15); color: var(--amber); }
+  .eng-low  { background: rgba(102,102,102,0.1); color: var(--muted); }
+  .type-badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 2px;
+    margin-left: 6px;
+    vertical-align: middle;
+    background: var(--bg3);
+    color: var(--muted);
+  }
+  .type-quote { background: rgba(29,155,240,0.12); color: var(--accent2); }
+  .type-reply { background: rgba(102,102,102,0.1); color: var(--muted); }
+
+  /* ── sort buttons ── */
+  .sort-row { display: flex; gap: 2px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+  .sort-label { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-right: 8px; }
+  .filter-row { display: flex; gap: 2px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+
+  /* ── loading / error ── */
+  .loading {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    padding: 40px;
+    text-align: center;
+    animation: blink 1.2s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .error-msg {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--red);
+    padding: 16px;
+    border: 1px solid rgba(239,68,68,0.3);
+    background: rgba(239,68,68,0.05);
+  }
+
+  /* ── footer ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 20px 32px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    margin-top: 48px;
+  }
+
+  /* ── two-col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 700px) {
+    .two-col { grid-template-columns: 1fr; }
+    main { padding: 16px; }
+    header { padding: 16px; }
+    .metric-value { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <a class="logo" href="https://x.com/nshima_finance" target="_blank">@nshima_finance</a>
+    <span class="header-tag">X Analytics</span>
+  </div>
+  <div class="live-dot" id="updated-label">読み込み中...</div>
+</header>
+
+<main>
+
+  <!-- ── サマリー ── -->
+  <div class="section-label">summary</div>
+  <div class="metric-grid" id="metric-grid">
+    <div class="loading">loading…</div>
+  </div>
+
+  <!-- ── フォロワー推移 ── -->
+  <div class="section-label">フォロワー推移</div>
+  <div class="chart-card">
+    <div class="chart-title">Follower growth</div>
+    <div class="chart-sub" id="follower-range">—</div>
+    <div class="tab-row">
+      <button class="tab" onclick="setFollowerRange('all',this)">ALL</button>
+      <button class="tab" onclick="setFollowerRange('180',this)">180D</button>
+      <button class="tab active" onclick="setFollowerRange('90',this)">90D</button>
+      <button class="tab" onclick="setFollowerRange('30',this)">30D</button>
+    </div>
+    <div class="chart-wrap"><canvas id="followerChart" role="img" aria-label="フォロワー推移グラフ"></canvas></div>
+  </div>
+
+  <!-- ── フォロワー日次変化 ── -->
+  <div class="chart-card">
+    <div class="chart-title">フォロワー日次変化</div>
+    <div class="chart-sub">日次増減 + 7日移動平均</div>
+    <div class="chart-wrap" style="height:200px"><canvas id="followerDeltaChart" role="img" aria-label="フォロワー日次変化"></canvas></div>
+  </div>
+
+  <!-- ── 日次インプレッション・いいね ── -->
+  <div class="two-col">
+    <div class="chart-card">
+      <div class="chart-title">日次インプレッション</div>
+      <div class="chart-sub">直近30日</div>
+      <div class="chart-wrap" style="height:180px"><canvas id="impChart" role="img" aria-label="日次インプレッション"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">日次いいね・エンゲージメント</div>
+      <div class="chart-sub">直近30日</div>
+      <div class="chart-wrap" style="height:210px"><canvas id="engChart" role="img" aria-label="日次いいね"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ── 曜日別平均インプレッション ── -->
+  <div class="chart-card">
+    <div class="chart-title">曜日別 平均インプレッション</div>
+    <div class="chart-sub">前日までの過去8週間平均（投稿効果の高い曜日を把握）</div>
+    <div class="chart-wrap" style="height:180px"><canvas id="dowChart" role="img" aria-label="曜日別平均インプレッション"></canvas></div>
+  </div>
+
+  <!-- ── ツイート別パフォーマンス ── -->
+  <div class="section-label">投稿別パフォーマンス</div>
+  <div class="filter-row">
+    <span class="sort-label">filter</span>
+    <button class="tab active" onclick="filterTweets('main',this)">通常+引用</button>
+    <button class="tab" onclick="filterTweets('all',this)">すべて</button>
+    <button class="tab" onclick="filterTweets('normal',this)">通常のみ</button>
+  </div>
+  <div class="sort-row">
+    <span class="sort-label">sort by</span>
+    <button class="tab active" onclick="sortTweets('created_at',this)">新着順</button>
+    <button class="tab" onclick="sortTweets('impressions',this)">インプレッション</button>
+    <button class="tab" onclick="sortTweets('likes',this)">いいね</button>
+    <button class="tab" onclick="sortTweets('eng_rate',this)">エンゲージ率</button>
+  </div>
+  <div class="chart-card" style="padding:0; overflow:auto">
+    <table class="tweet-table" id="tweet-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>投稿内容</th>
+          <th>投稿日時</th>
+          <th style="text-align:right">IMP</th>
+          <th style="text-align:right">❤</th>
+          <th style="text-align:right">RT</th>
+          <th>Eng率</th>
+        </tr>
+      </thead>
+      <tbody id="tweet-tbody">
+        <tr><td colspan="7" class="loading">loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+
+<footer>
+  <span>@nshima_finance · X Analytics Dashboard</span>
+  <span id="footer-updated">—</span>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// ── データソース ──────────────────────────────────────────
+const REPO = 'take-cmd-web/X_follower';
+// Contents API：コミット直後の最新を返す（raw のような CDN キャッシュ事故が無い）
+const API  = `https://api.github.com/repos/${REPO}/contents/data`;
+// フォールバック用（API がレート制限等で失敗した場合のみ使う）
+const RAW  = `https://raw.githubusercontent.com/${REPO}/main/data`;
+
+// ── グローバル状態 ────────────────────────────────────────
+let allFollowers = [];
+let allOverview  = [];
+let allTweets    = [];   // x_posts.csv を正規化したもの
+let followerChart, followerDeltaChart, impChart, engChart, dowChart;
+let currentSort  = 'created_at';
+let currentFilter = 'main';   // main=通常+引用 / all / normal
+
+// ── CSV パーサー（複数行フィールド対応） ─────────────────
+function parseCSV(text) {
+  const src = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const rows = [];
+  let cur = '', inQ = false, fields = [];
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (c === '"') {
+      if (inQ && src[i+1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (c === ',' && !inQ) {
+      fields.push(cur); cur = '';
+    } else if (c === '\n' && !inQ) {
+      fields.push(cur); cur = '';
+      if (fields.some(f => f.trim())) rows.push(fields);
+      fields = [];
+    } else {
+      cur += c;
+    }
+  }
+  if (cur || fields.length) { fields.push(cur); if (fields.some(f => f.trim())) rows.push(fields); }
+  const headers = rows[0].map(h => h.replace(/\\/g,'').trim().replace(/^"|"$/g,''));
+  return rows.slice(1).filter(r => r.length > 1).map(vals => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = (vals[i] || '').replace(/^"|"$/g,'').trim());
+    return obj;
+  });
+}
+
+// ── fetch ─────────────────────────────────────────────────
+async function fetchCSV(filename) {
+  try {
+    const res = await fetch(`${API}/${filename}?ref=main`, {
+      headers: { 'Accept': 'application/vnd.github.raw' },
+      cache: 'no-store'
+    });
+    if (res.ok) return parseCSV(await res.text());
+  } catch (e) { /* フォールバックへ */ }
+
+  const res2 = await fetch(`${RAW}/${filename}?_=${Date.now()}`, { cache: 'no-store' });
+  if (!res2.ok) throw new Error(`${filename} not found`);
+  return parseCSV(await res2.text());
+}
+
+// ── x_posts.csv → 内部統一スキーマへ正規化 ──────────────────
+// x_posts.csv ヘッダー: 投稿ID/日付/時間/投稿内容/インプレッション/いいね/RT/リプライ/引用RT/メディア種別/.../投稿種別/引用元ID
+// 日付・時間は既にJST。これを created_at（"YYYY-MM-DD HH:mm" JST）として保持し、UTC変換は一切しない。
+function normalizeXPosts(rows) {
+  return rows.map(r => {
+    const date = (r['日付'] || '').trim();              // 2026-06-11
+    const time = (r['時間'] || '').trim();              // 20:01
+    const imp  = Number(r['インプレッション']) || 0;
+    const likes = Number(r['いいね']) || 0;
+    const rts   = Number(r['RT']) || 0;
+    const replies = Number(r['リプライ']) || 0;
+    const quotes  = Number(r['引用RT']) || 0;
+    // エンゲージ率 = (いいね+RT+リプライ+引用) / インプレッション * 100
+    const engRate = imp > 0 ? ((likes + rts + replies + quotes) / imp * 100) : 0;
+    return {
+      tweet_id: r['投稿ID'] || '',
+      created_at: time ? `${date} ${time}` : date,   // JSTのまま
+      _date: date,                                    // JST日付（集計用）
+      _time: time,                                    // JST時刻
+      text: r['投稿内容'] || '',
+      impressions: imp,
+      likes: likes,
+      retweets: rts,
+      replies: replies,
+      quotes: quotes,
+      eng_rate: engRate,
+      post_type: r['投稿種別'] || '通常',
+    };
+  });
+}
+
+// ── 数値フォーマット ──────────────────────────────────────
+function fmt(n) {
+  const v = Number(n) || 0;
+  return v >= 1000 ? (v/1000).toFixed(1)+'k' : String(v);
+}
+function fmtFull(n) { return (Number(n)||0).toLocaleString(); }
+
+// JST日付("YYYY-MM-DD")からDateオブジェクト（ローカル深夜0時相当）を返す。曜日判定用。
+function jstDateObj(dateStr) {
+  if (!dateStr) return null;
+  const m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  // ローカルタイムのDateとして生成（曜日のみ使うのでTZずれは曜日に影響しない範囲）
+  return new Date(Number(m[1]), Number(m[2])-1, Number(m[3]));
+}
+
+// ── 投稿フィルタ適用 ──────────────────────────────────────
+function applyFilter(rows) {
+  if (currentFilter === 'all') return rows;
+  if (currentFilter === 'normal') return rows.filter(r => r.post_type === '通常');
+  // main: 通常 + 引用（返信を除外）
+  return rows.filter(r => r.post_type !== '返信');
+}
+
+// ── メトリクスカード描画 ──────────────────────────────────
+function renderMetrics() {
+  const latestF = allFollowers.filter(r => r.followers).sort((a,b) => b.date.localeCompare(a.date));
+  const followers = Number(latestF[0]?.followers) || 0;
+  const prevF = Number(latestF[1]?.followers) || followers;
+  const fDelta = followers - prevF;
+
+  // x_posts（通常+引用）から直近7日・30日のIMP・いいねを集計
+  const baseTweets = applyFilter(allTweets);
+  const now = new Date();
+  const cutoff7  = new Date(now); cutoff7.setDate(now.getDate()-7);  cutoff7.setHours(0,0,0,0);
+  const cutoff30 = new Date(now); cutoff30.setDate(now.getDate()-30); cutoff30.setHours(0,0,0,0);
+  const cutoff14 = new Date(now); cutoff14.setDate(now.getDate()-14); cutoff14.setHours(0,0,0,0);
+
+  const inRange = (r, from, to) => {
+    const d = jstDateObj(r._date);
+    if (!d) return false;
+    return d >= from && (to ? d < to : true);
+  };
+
+  const tweets7  = baseTweets.filter(r => inRange(r, cutoff7));
+  const tweets30 = baseTweets.filter(r => inRange(r, cutoff30));
+  const tweetsPrev7 = baseTweets.filter(r => inRange(r, cutoff14, cutoff7));
+
+  const totalImp7   = tweets7.reduce((s,r)  => s + r.impressions, 0);
+  const totalImp30  = tweets30.reduce((s,r) => s + r.impressions, 0);
+  const prevImp7    = tweetsPrev7.reduce((s,r) => s + r.impressions, 0);
+  const totalLike30 = tweets30.reduce((s,r) => s + r.likes, 0);
+  const impDeltaPct = prevImp7 > 0 ? Math.round((totalImp7 - prevImp7)/prevImp7*100) : 0;
+
+  // 新フォローはoverview（手動CSV）から（あれば）
+  const cutoff30ov = new Date(now); cutoff30ov.setDate(now.getDate()-30);
+  const recent30ov = allOverview.filter(r => new Date(r._date) >= cutoff30ov);
+  const totalNewF30 = recent30ov.reduce((s,r) => s + (Number(r['新しいフォロー'])||0), 0);
+
+  const cards = [
+    { label: 'FOLLOWERS', value: fmtFull(followers), delta: fDelta >= 0 ? `+${fDelta} vs 前日` : `${fDelta} vs 前日`, up: fDelta >= 0 },
+    { label: 'IMP / 7D', value: fmt(totalImp7), delta: impDeltaPct >= 0 ? `+${impDeltaPct}% vs 前週` : `${impDeltaPct}% vs 前週`, up: impDeltaPct >= 0 },
+    { label: 'IMP / 30D', value: fmt(totalImp30), delta: '直近30日合計', flat: true },
+    { label: 'いいね / 30D', value: fmt(totalLike30), delta: '直近30日合計', flat: true },
+    { label: '新フォロー / 30D', value: fmtFull(totalNewF30), delta: '直近30日', flat: true },
+  ];
+
+  document.getElementById('metric-grid').innerHTML = cards.map(c => `
+    <div class="metric-card">
+      <div class="metric-label">${c.label}</div>
+      <div class="metric-value">${c.value}</div>
+      <div class="metric-delta ${c.flat ? 'delta-flat' : c.up ? 'delta-up' : 'delta-down'}">
+        ${c.flat ? '' : (c.up ? '▲' : '▼')} ${c.delta}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── フォロワーチャート ────────────────────────────────────
+let followerDays = 90;
+function setFollowerRange(range, btn) {
+  document.querySelectorAll('.tab-row .tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  followerDays = range === 'all' ? 9999 : parseInt(range);
+  drawFollowerChart();
+  drawFollowerDeltaChart();
+}
+
+function drawFollowerChart() {
+  const sorted = [...allFollowers].filter(r => r.followers).sort((a,b) => a.date.localeCompare(b.date));
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - followerDays);
+  const data = followerDays >= 9999 ? sorted : sorted.filter(r => new Date(r.date) >= cutoff);
+
+  const labels = data.map(r => r.date.slice(5));
+  const values = data.map(r => Number(r.followers));
+
+  document.getElementById('follower-range').textContent =
+    data.length > 0 ? `${data[0].date} 〜 ${data[data.length-1].date}` : '';
+
+  if (followerChart) followerChart.destroy();
+  followerChart = new Chart(document.getElementById('followerChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        borderColor: 'rgba(29,155,240,0.6)',
+        backgroundColor: 'rgba(29,155,240,0.04)',
+        borderWidth: 1,
+        pointRadius: data.length > 60 ? 0 : 3,
+        pointHoverRadius: 5,
+        fill: true,
+        tension: 0.3,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        callbacks: { label: ctx => `${fmtFull(ctx.parsed.y)} followers` }
+      }},
+      scales: {
+        x: { ticks: { color: '#999990', font: { family: 'JetBrains Mono', size: 10 }, maxTicksLimit: 8, maxRotation: 0 }, grid: { color: 'rgba(0,0,0,0.08)' } },
+        y: { ticks: { color: '#999990', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: 'rgba(0,0,0,0.08)' } }
+      }
+    }
+  });
+}
+
+// ── フォロワー日次変化チャート ───────────────────────────
+function drawFollowerDeltaChart() {
+  const all = [...allFollowers].filter(r => r.followers).sort((a,b) => a.date.localeCompare(b.date));
+  if (all.length < 2) return;
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - followerDays);
+  const sorted = followerDays >= 9999 ? all : all.filter(r => new Date(r.date) >= cutoff);
+  if (sorted.length < 2) return;
+
+  const labels = [], deltas = [], ma7 = [];
+  for (let i = 1; i < sorted.length; i++) {
+    const d = Number(sorted[i].followers) - Number(sorted[i-1].followers);
+    labels.push(sorted[i].date.slice(5));
+    deltas.push(d);
+  }
+  for (let i = 0; i < deltas.length; i++) {
+    const start = Math.max(0, i - 6);
+    const slice = deltas.slice(start, i + 1);
+    ma7.push(Math.round(slice.reduce((a,b) => a+b, 0) / slice.length * 10) / 10);
+  }
+
+  const colors = deltas.map(v => v >= 0 ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)');
+
+  if (followerDeltaChart) followerDeltaChart.destroy();
+  followerDeltaChart = new Chart(document.getElementById('followerDeltaChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { type: 'bar', label: '日次増減', data: deltas, backgroundColor: colors, borderWidth: 0, order: 2 },
+        { type: 'line', label: '7日移動平均', data: ma7, borderColor: '#f59e0b', borderWidth: 2, pointRadius: 0, tension: 0.4, order: 1 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + (ctx.parsed.y >= 0 ? '+' : '') + ctx.parsed.y } }
+      },
+      scales: {
+        x: { ticks: { color: '#999990', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 10, maxRotation: 0 }, grid: { display: false } },
+        y: { ticks: { color: '#999990', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: 'rgba(0,0,0,0.08)' } }
+      }
+    }
+  });
+}
+
+// ── 日次インプレッションチャート ──────────────────────────
+function drawImpChart() {
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-30);
+  const data = allOverview.filter(r => new Date(r._date) >= cutoff).sort((a,b) => a._date.localeCompare(b._date));
+  const labels = data.map(r => r._date.slice(5));
+  const values = data.map(r => Number(r['インプレッション数'])||0);
+
+  if (impChart) impChart.destroy();
+  impChart = new Chart(document.getElementById('impChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ data: values, backgroundColor: 'rgba(29,155,240,0.5)', borderColor: '#1d9bf0', borderWidth: 1 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#999990', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 6, maxRotation: 0 }, grid: { display: false } },
+        y: { ticks: { color: '#999990', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: 'rgba(0,0,0,0.08)' } }
+      }
+    }
+  });
+}
+
+// ── 日次いいね・エンゲージメントチャート ─────────────────
+function drawEngChart() {
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-30);
+  const data = allOverview.filter(r => new Date(r._date) >= cutoff).sort((a,b) => a._date.localeCompare(b._date));
+  const labels = data.map(r => r._date.slice(5));
+  const likes = data.map(r => Number(r['いいね'])||0);
+  const engs  = data.map(r => Number(r['エンゲージメント'])||0);
+
+  if (engChart) engChart.destroy();
+  engChart = new Chart(document.getElementById('engChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'いいね', data: likes, backgroundColor: 'rgba(239,68,68,0.5)', borderColor: '#ef4444', borderWidth: 1 },
+        { label: 'エンゲージ（いいね+RT+返信）', data: engs, backgroundColor: 'rgba(245,158,11,0.3)', borderColor: '#f59e0b', borderWidth: 1 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', align: 'end',
+          labels: { boxWidth: 10, boxHeight: 10, color: '#6b6860', font: { family: 'JetBrains Mono', size: 10 }, padding: 10 } }
+      },
+      scales: {
+        x: { ticks: { color: '#999990', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 6, maxRotation: 0 }, grid: { display: false } },
+        y: { ticks: { color: '#999990', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: 'rgba(0,0,0,0.08)' } }
+      }
+    }
+  });
+}
+
+// ── 曜日別チャート ────────────────────────────────────────
+function drawDowChart() {
+  const DOW = ['日','月','火','水','木','金','土'];
+  const sums = [0,0,0,0,0,0,0];
+  const cnts = [0,0,0,0,0,0,0];
+  const today = new Date(); today.setHours(0,0,0,0);
+  const cutoff56 = new Date(today); cutoff56.setDate(today.getDate()-56);
+
+  // 通常+引用（返信除外）の投稿を対象に、JST日付の曜日で集計
+  const recent = applyFilter(allTweets).filter(r => {
+    const d = jstDateObj(r._date);
+    return d && d >= cutoff56 && d < today;
+  });
+  for (const r of recent) {
+    const d = jstDateObj(r._date);
+    if (!d) continue;
+    const dow = d.getDay();
+    sums[dow] += r.impressions;
+    cnts[dow]++;
+  }
+  const avgs = sums.map((s,i) => cnts[i] > 0 ? Math.round(s/cnts[i]) : 0);
+  const maxAvg = Math.max(...avgs);
+  const colors = avgs.map(v => v === maxAvg && maxAvg > 0 ? '#1d9bf0' : 'rgba(29,155,240,0.3)');
+
+  if (dowChart) dowChart.destroy();
+  dowChart = new Chart(document.getElementById('dowChart'), {
+    type: 'bar',
+    data: { labels: DOW, datasets: [{ data: avgs, backgroundColor: colors, borderRadius: 2 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `平均 ${fmtFull(ctx.parsed.y)} imp` } } },
+      scales: {
+        x: { ticks: { color: '#999990', font: { family: 'JetBrains Mono', size: 12 } }, grid: { display: false } },
+        y: { ticks: { color: '#999990', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: 'rgba(0,0,0,0.08)' } }
+      }
+    }
+  });
+}
+
+// ── ツイートテーブル ──────────────────────────────────────
+function filterTweets(mode, btn) {
+  document.querySelectorAll('.filter-row .tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  currentFilter = mode;
+  renderTweetTable();
+  renderMetrics();
+  drawDowChart();
+}
+
+function sortTweets(key, btn) {
+  document.querySelectorAll('.sort-row .tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  currentSort = key;
+  renderTweetTable();
+}
+
+function renderTweetTable() {
+  if (!allTweets.length) return;
+
+  const filtered = applyFilter(allTweets);
+  const sorted = [...filtered].sort((a,b) => {
+    if (currentSort === 'created_at') return b.created_at.localeCompare(a.created_at);
+    return (Number(b[currentSort])||0) - (Number(a[currentSort])||0);
+  });
+
+  const maxImp = Math.max(1, ...sorted.map(r => r.impressions));
+
+  const rows = sorted.map((r, i) => {
+    const imp = r.impressions;
+    const eng = r.eng_rate;
+    const engClass = eng >= 2 ? 'eng-high' : eng >= 0.5 ? 'eng-mid' : 'eng-low';
+    const barW = maxImp > 0 ? Math.round(imp/maxImp*100) : 0;
+    const text = r.text || '(本文未取得)';
+    const tweetUrl = `https://x.com/nshima_finance/status/${r.tweet_id}`;
+
+    let typeBadge = '';
+    if (r.post_type === '引用') typeBadge = '<span class="type-badge type-quote">引用</span>';
+    else if (r.post_type === '返信') typeBadge = '<span class="type-badge type-reply">返信</span>';
+
+    return `<tr>
+      <td class="num" style="color:var(--text)">${i+1}</td>
+      <td>
+        <a href="${tweetUrl}" target="_blank" style="text-decoration:none">
+          <div class="tweet-text">${escHtml(text)}${typeBadge}</div>
+        </a>
+      </td>
+      <td class="tweet-date">${r._date}<br><span style="color:var(--muted);font-size:10px">${r._time}</span></td>
+      <td class="num bar-cell">
+        ${fmtFull(imp)}
+        <div class="bar-bg"><div class="bar-fill" style="width:${barW}%"></div></div>
+      </td>
+      <td class="num">${r.likes||0}</td>
+      <td class="num">${r.retweets||0}</td>
+      <td><span class="eng-badge ${engClass}">${eng.toFixed(2)}%</span></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tweet-tbody').innerHTML = rows;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── tweets（x_posts）から日次集計（overviewフォールバック用） ──
+function buildOverviewFromTweets() {
+  const dayMap = {};
+  for (const t of applyFilter(allTweets)) {
+    const d = t._date;
+    if (!d) continue;
+    if (!dayMap[d]) dayMap[d] = { _date: d, 'インプレッション数': 0, 'いいね': 0, 'エンゲージメント': 0, '新しいフォロー': 0, 'フォロー解除': 0 };
+    dayMap[d]['インプレッション数'] += t.impressions;
+    dayMap[d]['いいね'] += t.likes;
+    dayMap[d]['エンゲージメント'] += t.likes + t.replies + t.retweets + t.quotes;
+  }
+  return Object.values(dayMap);
+}
+
+// ── メイン ────────────────────────────────────────────────
+async function main() {
+  try {
+    const [followersRaw, postsRaw] = await Promise.all([
+      fetchCSV('followers.csv'),
+      fetchCSV('x_posts.csv').catch(() => []),
+    ]);
+
+    allFollowers = followersRaw;
+    const sortedF = [...allFollowers].filter(r=>r.followers).sort((a,b)=>a.date.localeCompare(b.date));
+
+    // x_posts.csv を内部スキーマへ正規化
+    allTweets = normalizeXPosts(postsRaw);
+
+    // overview を取得。古い/無い場合は x_posts 集計にフォールバック
+    let overviewStale = true;
+    try {
+      const ov = await fetchCSV('account_overview.csv');
+      const mapped = ov.map(r => {
+        const raw = (r['Date'] || r['date'] || '').trim();
+        let d = '';
+        try {
+          const dt = new Date(raw);
+          const y = dt.getFullYear();
+          const m = String(dt.getMonth()+1).padStart(2,'0');
+          const dd = String(dt.getDate()).padStart(2,'0');
+          d = `${y}-${m}-${dd}`;
+        } catch(e) { d = raw; }
+        return { ...r, _date: d };
+      }).filter(r => r._date && r._date.match(/^\d{4}-\d{2}-\d{2}$/));
+
+      if (mapped.length) {
+        const latestOv = mapped.map(r => r._date).sort().pop();
+        const ageDays = (Date.now() - new Date(latestOv).getTime()) / 86400000;
+        overviewStale = ageDays > 7;
+      }
+      allOverview = mapped;
+    } catch {
+      overviewStale = true;
+    }
+
+    if (overviewStale) {
+      allOverview = buildOverviewFromTweets();
+      document.querySelectorAll('.chart-card').forEach(card => {
+        const title = card.querySelector('.chart-title')?.textContent || '';
+        if (title.includes('日次インプレッション') || title.includes('日次いいね')) {
+          const sub = card.querySelector('.chart-sub');
+          if (sub && !sub.dataset.noted) {
+            sub.textContent += '（概要CSV未更新のため投稿集計ベース）';
+            sub.dataset.noted = '1';
+          }
+        }
+      });
+    }
+
+    // 更新日時：x_posts の最新投稿 と followers の最新スナップショットのうち新しい方
+    const latestPostDt = allTweets.length
+      ? allTweets.map(t => t.created_at).sort().pop()
+      : '';
+    const latestFollowerRow = sortedF[sortedF.length-1];
+    const latestFollowerDt = (latestFollowerRow?.updated_at && latestFollowerRow.updated_at.trim() !== '')
+      ? latestFollowerRow.updated_at
+      : latestFollowerRow?.date || '';
+    const shown = latestPostDt || latestFollowerDt || '—';
+    document.getElementById('updated-label').textContent = `最新投稿: ${latestPostDt || '—'}`;
+    document.getElementById('footer-updated').textContent = `last post: ${latestPostDt || '—'} JST / followers: ${latestFollowerDt || '—'}`;
+
+    // 描画
+    renderMetrics();
+    drawFollowerChart();
+    drawFollowerDeltaChart();
+    drawImpChart();
+    drawEngChart();
+    drawDowChart();
+    renderTweetTable();
+
+  } catch(e) {
+    document.getElementById('metric-grid').innerHTML =
+      `<div class="error-msg">データ取得エラー: ${e.message}<br>GitHubリポジトリがPublicか、ファイルパスを確認してください。</div>`;
+    console.error(e);
+  }
+}
+
+main();
+</script>
+</body>
+</html>
