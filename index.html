@@ -932,8 +932,8 @@ async function main() {
     const latestFollowerDt = (latestFollowerRow?.updated_at && latestFollowerRow.updated_at.trim() !== '')
       ? latestFollowerRow.updated_at
       : latestFollowerRow?.date || '';
-    const shown = latestPostDt || latestFollowerDt || '—';
-    document.getElementById('updated-label').textContent = `最新投稿: ${latestPostDt || '—'}`;
+    document.getElementById('updated-label').textContent =
+      `最終更新: ${latestFollowerDt || '—'} ／ 最新投稿: ${latestPostDt || '—'}`;
     document.getElementById('footer-updated').textContent = `last post: ${latestPostDt || '—'} JST / followers: ${latestFollowerDt || '—'}`;
 
     // 描画
